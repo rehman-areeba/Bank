@@ -1,7 +1,9 @@
 using BankingApi.Data;
+using BankingApi.DTOs;
 using BankingApi.Middleware;
 using BankingApi.Repositories;
 using BankingApi.Services;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -24,6 +26,10 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<ITransferService, TransferService>();
+
+// ── Validators ────────────────────────────────────────────────────────────────
+builder.Services.AddScoped<IValidator<RegisterRequestDto>, RegisterRequestDtoValidator>();
+builder.Services.AddScoped<IValidator<TransferRequestDto>, TransferRequestDtoValidator>();
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
