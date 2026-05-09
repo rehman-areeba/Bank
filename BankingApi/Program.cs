@@ -1,4 +1,5 @@
 using BankingApi.Data;
+using BankingApi.Middleware;
 using BankingApi.Repositories;
 using BankingApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -82,6 +83,8 @@ builder.Services.AddControllers();
 
 // ── Pipeline ──────────────────────────────────────────────────────────────────
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
