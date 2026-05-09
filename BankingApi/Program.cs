@@ -97,7 +97,7 @@ builder.Services.AddRateLimiter(options =>
             error = "Too many requests",
             message = "Rate limit exceeded. Please try again later.",
             retryAfter = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter)
-                ? retryAfter.TotalSeconds
+                ? (double?)retryAfter.TotalSeconds
                 : null
         }, cancellationToken);
     };
