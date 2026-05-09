@@ -26,6 +26,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<ITransferService, TransferService>();
+builder.Services.AddScoped<IAuditService, AuditService>();
 
 // ── Validators ────────────────────────────────────────────────────────────────
 builder.Services.AddScoped<IValidator<RegisterRequestDto>, RegisterRequestDtoValidator>();
