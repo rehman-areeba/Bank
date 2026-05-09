@@ -3,6 +3,7 @@ using BankingApi.Services;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
@@ -19,6 +20,7 @@ public class TransfersController(
     private readonly IValidator<TransferRequestDto> _validator = validator;
 
     [HttpPost]
+    [EnableRateLimiting("transfers")]
     public async Task<ActionResult<TransferResponseDto>> ExecuteTransfer(
         [FromBody] TransferRequestDto request,
         CancellationToken cancellationToken)
