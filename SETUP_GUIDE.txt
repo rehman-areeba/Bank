@@ -1,0 +1,386 @@
+# COMPLETE BANKING API SETUP GUIDE
+# SQL Server Express: DESKTOP-BD0D62J\SQLEXPRESS
+# Windows Authentication (No username/password)
+
+## ═══════════════════════════════════════════════════════════════════════════
+## 1. APPSETTINGS.JSON (PRODUCTION)
+## ═══════════════════════════════════════════════════════════════════════════
+
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=DESKTOP-BD0D62J\\SQLEXPRESS;Database=BankingDb;Trusted_Connection=True;TrustServerCertificate=True"
+  },
+  "Jwt": {
+    "Key": "your-super-secret-key-change-in-production-min-32-chars",
+    "Issuer": "BankingApi",
+    "Audience": "BankingClient",
+    "ExpiryHours": 24
+  },
+  "Transfer": {
+    "DailyLimit": 50000
+  }
+}
+
+## ═══════════════════════════════════════════════════════════════════════════
+## 2. APPSETTINGS.DEVELOPMENT.JSON (DEVELOPMENT)
+## ═══════════════════════════════════════════════════════════════════════════
+
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=DESKTOP-BD0D62J\\SQLEXPRESS;Database=BankingDb;Trusted_Connection=True;TrustServerCertificate=True"
+  },
+  "Jwt": {
+    "Key": "your-super-secret-key-change-in-production-min-32-chars",
+    "Issuer": "BankingApi",
+    "Audience": "BankingClient",
+    "ExpiryHours": 24
+  },
+  "Transfer": {
+    "DailyLimit": 50000
+  }
+}
+
+## ═══════════════════════════════════════════════════════════════════════════
+## 3. PROGRAM.CS - DBCONTEXT REGISTRATION (ALREADY CONFIGURED)
+## ═══════════════════════════════════════════════════════════════════════════
+
+Line 19-20 in Program.cs:
+builder.Services.AddDbContext<BankingDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+✅ DbContext is correctly registered using GetConnectionString("DefaultConnection")
+
+## ═══════════════════════════════════════════════════════════════════════════
+## 4. WINDOWS CMD COMMANDS (RUN IN ORDER)
+## ═══════════════════════════════════════════════════════════════════════════
+
+# Step 1: Navigate to BankingApi folder
+cd C:\Users\HP\Documents\GitHub\Bank\BankingApi
+
+# Step 2: Check if dotnet ef tools are installed
+dotnet ef --version
+
+# Step 3: If NOT installed (you'll see an error), install it:
+dotnet tool install --global dotnet-ef
+
+# Step 4: If already installed but outdated, update it:
+dotnet tool update --global dotnet-ef
+
+# Step 5: Verify EF Core packages are in the project (should see output)
+dotnet list package | findstr EntityFrameworkCore
+
+# Step 6: Build the project to ensure no compilation errors
+dotnet build
+
+# Step 7: Apply migration to create BankingDb database
+dotnet ef database update
+
+# Expected output:
+# Build started...
+# Build succeeded.
+# Applying migration '20260508081406_InitialCreate'.
+# Done.
+
+## ═══════════════════════════════════════════════════════════════════════════
+## 5. SQL QUERY TO VERIFY TABLES IN SSMS
+## ═══════════════════════════════════════════════════════════════════════════
+
+-- Run this in SSMS after connecting to DESKTOP-BD0D62J\SQLEXPRESS
+
+-- Check if BankingDb database exists
+SELECT name FROM sys.databases WHERE name = 'BankingDb';
+
+-- Switch to BankingDb
+USE BankingDb;
+GO
+
+-- Verify all 5 tables exist
+SELECT 
+    TABLE_NAME,
+    TABLE_TYPE
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_TYPE = 'BASE TABLE'
+ORDER BY TABLE_NAME;
+
+-- Expected output:
+-- Accounts
+-- AuditLogs
+-- ScheduledPayments
+-- Transactions
+-- Users
+
+-- Detailed table structure verification
+SELECT 
+    t.name AS TableName,
+    c.name AS ColumnName,
+    ty.name AS DataType,
+    c.max_length AS MaxLength,
+    c.precision AS Precision,
+    c.scale AS Scale,
+    c.is_nullable AS IsNullable,
+    c.is_identity AS IsIdentity
+FROM sys.tables t
+INNER JOIN sys.columns c ON t.object_id = c.object_id
+INNER JOIN sys.types ty ON c.user_type_id = ty.user_type_id
+WHERE t.name IN ('Users', 'Accounts', 'Transactions', 'AuditLogs', 'ScheduledPayments')
+ORDER BY t.name, c.column_id;
+
+-- Verify indexes
+SELECT 
+    t.name AS TableName,
+    i.name AS IndexName,
+    i.type_desc AS IndexType,
+    COL_NAME(ic.object_id, ic.column_id) AS ColumnName
+FROM sys.indexes i
+INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+INNER JOIN sys.tables t ON i.object_id = t.object_id
+WHERE t.name IN ('Users', 'Accounts', 'Transactions', 'AuditLogs', 'ScheduledPayments')
+ORDER BY t.name, i.name, ic.key_ordinal;
+
+-- Verify foreign keys
+SELECT 
+    fk.name AS ForeignKeyName,
+    OBJECT_NAME(fk.parent_object_id) AS TableName,
+    COL_NAME(fkc.parent_object_id, fkc.parent_column_id) AS ColumnName,
+    OBJECT_NAME(fk.referenced_object_id) AS ReferencedTable,
+    COL_NAME(fkc.referenced_object_id, fkc.referenced_column_id) AS ReferencedColumn
+FROM sys.foreign_keys fk
+INNER JOIN sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id
+WHERE OBJECT_NAME(fk.parent_object_id) IN ('Users', 'Accounts', 'Transactions', 'AuditLogs', 'ScheduledPayments')
+ORDER BY TableName, ForeignKeyName;
+
+-- Verify CHECK constraints (Balance >= 0)
+SELECT 
+    OBJECT_NAME(cc.parent_object_id) AS TableName,
+    cc.name AS ConstraintName,
+    cc.definition AS ConstraintDefinition
+FROM sys.check_constraints cc
+WHERE OBJECT_NAME(cc.parent_object_id) IN ('Accounts');
+
+## ═══════════════════════════════════════════════════════════════════════════
+## 6. TEST API WITH SWAGGER - POST /api/auth/register
+## ═══════════════════════════════════════════════════════════════════════════
+
+# Step 1: Run the API
+cd C:\Users\HP\Documents\GitHub\Bank\BankingApi
+dotnet run
+
+# Expected output:
+# info: Microsoft.Hosting.Lifetime[14]
+#       Now listening on: https://localhost:5001
+#       Now listening on: http://localhost:5000
+# info: Microsoft.Hosting.Lifetime[0]
+#       Application started. Press Ctrl+C to shut down.
+
+# Step 2: Open browser and navigate to:
+https://localhost:5001/swagger
+
+# Step 3: Find POST /api/auth/register endpoint
+
+# Step 4: Click "Try it out"
+
+# Step 5: Use this sample request body:
+{
+  "fullName": "John Doe",
+  "email": "john.doe@example.com",
+  "password": "SecurePass123!",
+  "confirmPassword": "SecurePass123!"
+}
+
+# Step 6: Click "Execute"
+
+# Expected Response (201 Created):
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiresAt": "2024-05-09T10:30:00Z",
+  "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "fullName": "John Doe",
+  "role": "Customer"
+}
+
+# Step 7: Verify user was created in database (run in SSMS):
+USE BankingDb;
+SELECT * FROM Users;
+SELECT * FROM Accounts WHERE UserId = (SELECT Id FROM Users WHERE Email = 'john.doe@example.com');
+
+## ═══════════════════════════════════════════════════════════════════════════
+## 7. TROUBLESHOOTING CONNECTION ERRORS
+## ═══════════════════════════════════════════════════════════════════════════
+
+### ERROR 1: "A network-related or instance-specific error occurred"
+
+SOLUTION STEPS:
+
+1. Verify SQL Server is running:
+   - Open "Services" (Win + R, type "services.msc")
+   - Find "SQL Server (SQLEXPRESS)"
+   - Status should be "Running"
+   - If not, right-click → Start
+
+2. Verify instance name in SSMS:
+   - Open SSMS
+   - Server name: DESKTOP-BD0D62J\SQLEXPRESS
+   - Authentication: Windows Authentication
+   - Click "Connect"
+   - If it connects, the instance name is correct
+
+3. Enable TCP/IP protocol:
+   - Open "SQL Server Configuration Manager"
+   - Expand "SQL Server Network Configuration"
+   - Click "Protocols for SQLEXPRESS"
+   - Right-click "TCP/IP" → Enable
+   - Restart SQL Server service
+
+4. Test connection string in CMD:
+   cd C:\Users\HP\Documents\GitHub\Bank\BankingApi
+   dotnet ef dbcontext info
+
+   # Should show:
+   # Provider name: Microsoft.EntityFrameworkCore.SqlServer
+   # Database name: BankingDb
+   # Data source: DESKTOP-BD0D62J\SQLEXPRESS
+
+### ERROR 2: "Login failed for user"
+
+SOLUTION STEPS:
+
+1. Verify Windows Authentication is enabled:
+   - Open SSMS
+   - Connect to DESKTOP-BD0D62J\SQLEXPRESS
+   - Right-click server → Properties
+   - Security → "Windows Authentication mode" should be selected
+
+2. Verify your Windows user has access:
+   - In SSMS, expand "Security" → "Logins"
+   - Look for your Windows username
+   - If not present, right-click "Logins" → New Login
+   - Login name: DESKTOP-BD0D62J\HP (your Windows username)
+   - Server roles: sysadmin
+
+### ERROR 3: "Cannot open database 'BankingDb'"
+
+SOLUTION STEPS:
+
+1. Database doesn't exist yet - run migration:
+   cd C:\Users\HP\Documents\GitHub\Bank\BankingApi
+   dotnet ef database update
+
+2. If migration fails, check migration files exist:
+   dir Migrations
+
+   # Should see:
+   # 20260508081406_InitialCreate.cs
+   # 20260508081406_InitialCreate.Designer.cs
+   # BankingDbContextModelSnapshot.cs
+
+3. If no migrations exist, create one:
+   dotnet ef migrations add InitialCreate
+   dotnet ef database update
+
+### ERROR 4: "The term 'dotnet' is not recognized"
+
+SOLUTION STEPS:
+
+1. Verify .NET SDK is installed:
+   dotnet --version
+
+2. If not installed, download from:
+   https://dotnet.microsoft.com/download/dotnet/8.0
+
+3. After installation, restart CMD and try again
+
+### ERROR 5: "No executable found matching command 'dotnet-ef'"
+
+SOLUTION STEPS:
+
+1. Install EF Core tools globally:
+   dotnet tool install --global dotnet-ef
+
+2. Verify installation:
+   dotnet ef --version
+
+3. If still not working, add to PATH:
+   - Open System Properties → Environment Variables
+   - Add to PATH: %USERPROFILE%\.dotnet\tools
+
+4. Restart CMD and try again
+
+### ERROR 6: Build fails with compilation errors
+
+SOLUTION STEPS:
+
+1. Clean and rebuild:
+   cd C:\Users\HP\Documents\GitHub\Bank\BankingApi
+   dotnet clean
+   dotnet build
+
+2. Check for missing packages:
+   dotnet restore
+
+3. Verify all required packages are installed:
+   dotnet list package
+
+   # Should include:
+   # Microsoft.EntityFrameworkCore.SqlServer
+   # Microsoft.EntityFrameworkCore.Tools
+   # Microsoft.EntityFrameworkCore.Design
+
+4. If packages are missing, add them:
+   dotnet add package Microsoft.EntityFrameworkCore.SqlServer --version 10.0.7
+   dotnet add package Microsoft.EntityFrameworkCore.Tools --version 10.0.7
+   dotnet add package Microsoft.EntityFrameworkCore.Design --version 10.0.7
+
+### FINAL VERIFICATION CHECKLIST:
+
+✅ SQL Server (SQLEXPRESS) service is running
+✅ Can connect to DESKTOP-BD0D62J\SQLEXPRESS in SSMS
+✅ Connection string in appsettings.json matches instance name
+✅ dotnet ef tools are installed (dotnet ef --version works)
+✅ Project builds successfully (dotnet build)
+✅ Migration files exist in Migrations folder
+✅ dotnet ef database update completes without errors
+✅ BankingDb database exists in SSMS
+✅ All 5 tables exist: Users, Accounts, Transactions, AuditLogs, ScheduledPayments
+✅ API runs successfully (dotnet run)
+✅ Swagger UI loads at https://localhost:5001/swagger
+✅ POST /api/auth/register creates a user successfully
+
+## ═══════════════════════════════════════════════════════════════════════════
+## QUICK REFERENCE - COPY/PASTE COMMANDS
+## ═══════════════════════════════════════════════════════════════════════════
+
+# Navigate to project
+cd C:\Users\HP\Documents\GitHub\Bank\BankingApi
+
+# Install/Update EF tools
+dotnet tool install --global dotnet-ef
+dotnet tool update --global dotnet-ef
+
+# Build project
+dotnet build
+
+# Apply migration
+dotnet ef database update
+
+# Run API
+dotnet run
+
+# Open Swagger
+start https://localhost:5001/swagger
+
+## ═══════════════════════════════════════════════════════════════════════════
+## END OF SETUP GUIDE
+## ═══════════════════════════════════════════════════════════════════════════
