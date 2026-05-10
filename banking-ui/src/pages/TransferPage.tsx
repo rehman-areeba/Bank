@@ -31,7 +31,7 @@ export const TransferPage = () => {
     },
   });
 
-  const selectedAccount = accounts?.find((acc: any) => acc.id === Number(fromAccountId));
+  const selectedAccount = accounts?.find((acc: any) => acc.id === fromAccountId);
 
   const formatBalance = (balance: number) => {
     return new Intl.NumberFormat('en-PK', {
@@ -70,7 +70,7 @@ export const TransferPage = () => {
 
   const confirmTransfer = () => {
     mutation.mutate({
-      fromAccountId: Number(fromAccountId),
+      fromAccountId: fromAccountId,
       toAccountNumber,
       amount: parseFloat(amount),
       description,
@@ -125,6 +125,7 @@ export const TransferPage = () => {
                 {accounts?.map((account: any) => (
                   <option key={account.id} value={account.id} disabled={!account.isActive}>
                     {account.accountNumber} - {account.accountType} ({formatBalance(account.balance)})
+                    {!account.isActive && ' (Frozen)'}
                   </option>
                 ))}
               </select>

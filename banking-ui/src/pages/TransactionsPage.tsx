@@ -6,7 +6,7 @@ import { getTransactionsApi } from '../api/transfers';
 
 export const TransactionsPage = () => {
   const navigate = useNavigate();
-  const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [transactionType, setTransactionType] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -27,7 +27,7 @@ export const TransactionsPage = () => {
     queryKey: ['transactions', selectedAccountId, transactionType, startDate, endDate],
     queryFn: ({ pageParam = 1 }) =>
       getTransactionsApi({
-        accountId: selectedAccountId ? Number(selectedAccountId) : undefined,
+        accountId: selectedAccountId || undefined,
         transactionType: transactionType || undefined,
         startDate: startDate || undefined,
         endDate: endDate || undefined,

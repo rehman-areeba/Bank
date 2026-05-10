@@ -1,0 +1,204 @@
+===============================================
+BACKEND-FRONTEND CONNECTION SUMMARY
+===============================================
+
+✅ COMPLETED FIXES:
+-------------------
+
+1. API ROUTES ALIGNMENT:
+   - Auth: /api/auth/login, /api/auth/register, /api/auth/me
+   - Accounts: /api/accounts
+   - Transfers: /api/transfers
+   - Transactions: /api/accounts/{id}/transactions
+
+2. DATA TYPE FIXES:
+   - User ID: Changed from number to string (GUID)
+   - Account ID: Changed from number to string (GUID)
+   - Auth response structure matches backend DTOs
+
+3. RESPONSE MAPPING:
+   Backend → Frontend field mappings:
+   - type → accountType
+   - fullName → name
+   - userId → id
+   - Backend returns array directly for accounts
+
+4. REACT QUERY SETUP:
+   - Added QueryClientProvider in main.tsx
+   - Configured default options (no refetch on focus, retry: 1)
+
+5. PROXY CONFIGURATION:
+   - Added Vite proxy for /api routes
+   - Handles HTTPS backend (localhost:5001)
+   - Disables SSL verification for dev
+
+6. TRANSACTIONS API:
+   - Uses /api/accounts/{id}/transactions endpoint
+   - Maps backend 'type' field to 'transactionType'
+   - Handles pagination with pageNumber/pageSize
+
+===============================================
+BACKEND API STRUCTURE
+===============================================
+
+AUTH ENDPOINTS:
+---------------
+POST /api/auth/register
+Request: { name, email, password, phoneNumber?, address? }
+Response: { token, expiresAt, userId, fullName, role }
+
+POST /api/auth/login
+Request: { email, password }
+Response: { token, expiresAt, userId, fullName, role }
+
+GET /api/auth/me (requires JWT)
+Response: { userId, email, role, fullName }
+
+ACCOUNTS ENDPOINTS:
+-------------------
+GET /api/accounts (requires JWT)
+Response: [{ id, accountNumber, type, balance, isActive, createdAt }]
+
+GET /api/accounts/{id}/balance (requires JWT)
+Response: { accountId, balance }
+
+POST /api/accounts (requires JWT)
+Request: { accountType, initialBalance? }
+Response: { id, accountNumber, type, balance, isActive, createdAt }
+
+GET /api/accounts/{id}/transactions (requires JWT)
+Query: pageNumber, pageSize
+Response: {
+  data: [{ id, type, amount, description, createdAt, status }],
+  pageNumber, pageSize, totalCount, totalPages
+}
+
+TRANSFERS ENDPOINTS:
+--------------------
+POST /api/transfers (requires JWT, rate limited)
+Request: { fromAccountId, toAccountNumber, amount, description? }
+Response: { transactionId, status, message, newBalance }
+
+===============================================
+FRONTEND API STRUCTURE
+===============================================
+
+src/api/auth.ts:
+- loginApi(email, password) → { token, user }
+- registerApi(dto) → { token, user }
+- getMeApi() → { id, name, email, role }
+
+src/api/accounts.ts:
+- getAccountsApi() → [{ id, accountNumber, accountType, balance, isActive }]
+- getRecentTransactionsApi(limit) → { items: [...] }
+
+src/api/transfers.ts:
+- transferApi(data) → response
+- getTransactionsApi(params) → { items, currentPage, totalPages, totalCount }
+
+===============================================
+ENVIRONMENT CONFIGURATION
+===============================================
+
+.env file:
+----------
+VITE_API_URL=https://localhost:5001
+
+vite.config.ts:
+---------------
+Proxy configured for /api routes to https://localhost:5001
+SSL verification disabled for development
+
+===============================================
+AUTHENTICATION FLOW
+===============================================
+
+1. User registers/logs in
+2. Backend returns JWT token + user data
+3. Frontend stores token in localStorage
+4. Frontend stores user in Zustand store
+5. Axios interceptor attaches token to all requests
+6. Backend validates JWT on protected routes
+7. On 401 response, frontend clears token and redirects to /login
+
+===============================================
+HOW TO TEST THE CONNECTION
+===============================================
+
+1. START BACKEND:
+   cd C:\Users\HP\Documents\GitHub\Bank\BankingApi
+   dotnet run
+   
+   Backend runs on: https://localhost:5001
+   Swagger: https://localhost:5001/swagger
+
+2. START FRONTEND:
+   cd C:\Users\HP\Documents\GitHub\Bank\banking-ui
+   npm install (first time only)
+   npm run dev
+   
+   Frontend runs on: http://localhost:5173
+
+3. TEST FLOW:
+   a) Open http://localhost:5173
+   b) Click "Register here"
+   c) Fill form: Name, Email, Password (min 8 chars)
+   d) Submit → Should auto-login and redirect to dashboard
+   e) Dashboard should show:
+      - Your name in navbar
+      - Default Savings account (PKR 0.00)
+      - Empty transactions list
+   f) Try Transfer (will fail with insufficient balance)
+   g) Check browser DevTools Network tab for API calls
+
+4. VERIFY API CALLS:
+   Open DevTools → Network tab
+   Should see:
+   - POST /api/auth/register (201 Created)
+   - GET /api/accounts (200 OK)
+   - GET /api/accounts/{id}/transactions (200 OK)
+
+===============================================
+COMMON ISSUES & SOLUTIONS
+===============================================
+
+❌ CORS Error:
+   → Backend Program.cs has CORS configured for localhost:5173
+   → Ensure backend is running first
+
+❌ 401 Unauthorized:
+   → Check token in localStorage (DevTools → Application → Local Storage)
+   → Token should be present and valid
+   → Check Authorization header in Network tab
+
+❌ SSL Certificate Error:
+   → Run: dotnet dev-certs https --trust
+   → Restart browser
+
+❌ Connection Refused:
+   → Ensure backend is running on port 5001
+   → Check firewall settings
+
+❌ Empty Dashboard:
+   → Check Network tab for API errors
+   → Verify JWT token is being sent
+   → Check backend logs for errors
+
+❌ Type Errors (TypeScript):
+   → IDs are strings (GUIDs), not numbers
+   → User object: { id: string, name: string, email: string, role: string }
+
+===============================================
+NEXT STEPS
+===============================================
+
+To fully test transfers:
+1. Register 2 users
+2. Note their account numbers from dashboard
+3. Admin needs to add balance to accounts (use Swagger or SQL)
+4. Then test transfer between accounts
+
+SQL to add balance:
+UPDATE Accounts SET Balance = 10000 WHERE AccountNumber = 'XXXXXXXXXX';
+
+===============================================

@@ -15,25 +15,51 @@ interface RegisterRequest {
 
 interface AuthResponse {
   token: string;
-  user: {
-    id: number;
-    name: string;
-    email: string;
-    role: string;
-  };
+  expiresAt: string;
+  userId: string;
+  fullName: string;
+  role: string;
+}
+
+interface MeResponse {
+  userId: string;
+  email: string;
+  role: string;
+  fullName: string;
 }
 
 export const loginApi = async (email: string, password: string) => {
-  const { data } = await axiosClient.post<AuthResponse>('/auth/login', { email, password });
-  return data;
+  const { data } = await axiosClient.post<AuthResponse>('/api/auth/login', { email, password });
+  return {
+    token: data.token,
+    user: {
+      id: data.userId,
+      name: data.fullName,
+      email: email,
+      role: data.role,
+    },
+  };
 };
 
 export const registerApi = async (dto: RegisterRequest) => {
-  const { data } = await axiosClient.post<AuthResponse>('/auth/register', dto);
-  return data;
+  const { data } = await axiosClient.post<AuthResponse>('/api/auth/register', dto);
+  return {
+    token: data.token,
+    user: {
+      id: data.userId,
+      name: data.fullName,
+      email: dto.email,
+      role: data.role,
+    },
+  };
 };
 
 export const getMeApi = async () => {
-  const { data } = await axiosClient.get('/auth/me');
-  return data;
+  const { data } = await axiosClient.get<MeResponse>('/api/auth/me');
+  return {
+    id: data.userId,
+    name: data.fullName,
+    email: data.email,
+    role: data.role,
+  };
 };
