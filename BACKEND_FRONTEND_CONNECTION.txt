@@ -129,8 +129,8 @@ HOW TO TEST THE CONNECTION
    cd C:\Users\HP\Documents\GitHub\Bank\BankingApi
    dotnet run
    
-   Backend runs on: https://localhost:5001
-   Swagger: https://localhost:5001/swagger
+   Backend runs on: https://localhost:7253
+   Swagger: https://localhost:7253/swagger
 
 2. START FRONTEND:
    cd C:\Users\HP\Documents\GitHub\Bank\banking-ui

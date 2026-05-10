@@ -23,9 +23,9 @@ STEP 1: RUN THE BACKEND API
    dotnet run
 
 4. API will start on:
-   - HTTPS: https://localhost:5001
-   - HTTP: http://localhost:5000
-   - Swagger UI: https://localhost:5001/swagger
+   - HTTPS: https://localhost:7253
+   - HTTP: http://localhost:5245
+   - Swagger UI: https://localhost:7253/swagger
 
 5. Keep this terminal window open (API must stay running)
 
@@ -113,7 +113,7 @@ Frontend Issues:
 
 ❌ API connection failed (CORS):
    → Ensure backend is running on https://localhost:5001
-   → Check .env file: VITE_API_URL=https://localhost:5001
+   → Check .env file: VITE_API_URL=https://localhost:7253
 
 ❌ npm install fails:
    → Delete node_modules and package-lock.json
