@@ -11,15 +11,31 @@ namespace BankingApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [EnableRateLimiting("auth")]
-public class AuthController(IAuthService authService) : ControllerBase
+public class AuthController(IAuthService authService, IValidator<RegisterRequestDto> registerValidator) : ControllerBase
 {
     private readonly IAuthService _authService = authService;
+    private readonly IValidator<RegisterRequestDto> _registerValidator = registerValidator;
 
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponseDto>> Register(
         [FromBody] RegisterRequestDto request,
         CancellationToken cancellationToken)
     {
+        // Validate request
+        var validationResult = await _registerValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(new
+            {
+                message = "Validation failed",
+                errors = validationResult.Errors.Select(e => new
+                {
+                    property = e.PropertyName,
+                    message = e.ErrorMessage
+                })
+            });
+        }
+
         var response = await _authService.RegisterAsync(request, cancellationToken);
         return CreatedAtAction(nameof(GetMe), new { id = response.UserId }, response);
     }

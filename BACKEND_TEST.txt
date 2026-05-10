@@ -1,0 +1,124 @@
+===============================================
+BACKEND REGISTRATION TEST
+===============================================
+
+Test the backend directly using curl or Swagger:
+
+METHOD: POST
+URL: https://localhost:5001/api/auth/register
+HEADERS: Content-Type: application/json
+
+BODY (JSON):
+{
+  "fullName": "John Doe",
+  "email": "test@example.com",
+  "password": "Password123!",
+  "confirmPassword": "Password123!"
+}
+
+===============================================
+USING CURL (Windows CMD):
+===============================================
+
+curl -k -X POST https://localhost:5001/api/auth/register ^
+  -H "Content-Type: application/json" ^
+  -d "{\"fullName\":\"John Doe\",\"email\":\"test@example.com\",\"password\":\"Password123!\",\"confirmPassword\":\"Password123!\"}"
+
+===============================================
+USING SWAGGER:
+===============================================
+
+1. Start backend: dotnet run
+2. Open: https://localhost:5001/swagger
+3. Find: POST /api/auth/register
+4. Click "Try it out"
+5. Paste JSON body above
+6. Click "Execute"
+7. Check response (should be 201 Created)
+
+===============================================
+EXPECTED SUCCESS RESPONSE (201):
+===============================================
+
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiresAt": "2024-01-02T12:00:00Z",
+  "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "fullName": "John Doe",
+  "role": "Customer"
+}
+
+===============================================
+COMMON ERROR RESPONSES:
+===============================================
+
+400 Bad Request - Validation Failed:
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "property": "Password",
+      "message": "Password must contain at least one uppercase letter"
+    }
+  ]
+}
+
+400 Bad Request - Email Already Exists:
+{
+  "status": 400,
+  "title": "Bad Request",
+  "detail": "Email already registered"
+}
+
+500 Internal Server Error - Database Issue:
+{
+  "status": 500,
+  "title": "Internal Server Error",
+  "detail": "..."
+}
+
+===============================================
+DEBUGGING STEPS:
+===============================================
+
+1. CHECK BACKEND IS RUNNING:
+   - Look for: "Now listening on: https://localhost:5001"
+   - Check no errors in console
+
+2. CHECK DATABASE CONNECTION:
+   - Ensure SQL Server is running
+   - Verify connection string in appsettings.json
+   - Test query: SELECT 1 FROM Users
+
+3. CHECK FRONTEND CONSOLE:
+   - Open DevTools (F12)
+   - Go to Console tab
+   - Look for "Registration error:" log
+   - Check Network tab for API call details
+
+4. CHECK BACKEND LOGS:
+   - Look at terminal running dotnet run
+   - Check for exceptions or errors
+   - Look for "An unhandled exception occurred"
+
+5. VERIFY REQUEST PAYLOAD:
+   - Open DevTools → Network tab
+   - Find POST /api/auth/register
+   - Check Request Payload
+   - Ensure field names match: fullName, email, password, confirmPassword
+
+===============================================
+CLEAN DATABASE (if needed):
+===============================================
+
+If you need to start fresh:
+
+DELETE FROM Accounts;
+DELETE FROM Users;
+
+Or delete specific user:
+
+DELETE FROM Accounts WHERE UserId IN (SELECT Id FROM Users WHERE Email = 'test@example.com');
+DELETE FROM Users WHERE Email = 'test@example.com';
+
+===============================================

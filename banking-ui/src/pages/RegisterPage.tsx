@@ -20,7 +20,22 @@ export const RegisterPage = () => {
       navigate('/dashboard');
     },
     onError: (err: any) => {
-      setError(err.response?.data?.message || err.response?.data?.title || 'Registration failed');
+      console.error('Registration error:', err.response?.data);
+      
+      // Handle validation errors
+      if (err.response?.data?.errors) {
+        const errorMessages = err.response.data.errors
+          .map((e: any) => e.message)
+          .join(', ');
+        setError(errorMessages);
+      } else {
+        setError(
+          err.response?.data?.detail || 
+          err.response?.data?.message || 
+          err.response?.data?.title || 
+          'Registration failed. Please try again.'
+        );
+      }
     },
   });
 

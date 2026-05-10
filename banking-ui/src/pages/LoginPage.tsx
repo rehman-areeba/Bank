@@ -18,7 +18,13 @@ export const LoginPage = () => {
       navigate('/dashboard');
     },
     onError: (err: any) => {
-      setError(err.response?.data?.message || 'Login failed');
+      console.error('Login error:', err.response?.data);
+      setError(
+        err.response?.data?.detail || 
+        err.response?.data?.message || 
+        err.response?.data?.title || 
+        'Login failed. Please check your credentials.'
+      );
     },
   });
 
