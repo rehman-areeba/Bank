@@ -122,8 +122,16 @@ export const DashboardPage = () => {
             >
               View Transactions
             </button>
+            {user?.role === 'Admin' && (
+              <button
+                onClick={() => navigate('/admin')}
+                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
+              >
+                Admin Panel
+              </button>
+            )}
             <button
-              onClick={() => alert('New Account feature coming soon')}
+              onClick={() => navigate('/new-account')}
               className="px-6 py-3 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
             >
               New Account

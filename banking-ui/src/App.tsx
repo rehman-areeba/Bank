@@ -9,6 +9,7 @@ import {
   TransferPage,
   TransactionsPage,
   AdminPage,
+  NewAccountPage,
   NotFoundPage,
 } from './pages';
 
@@ -35,6 +36,7 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/transfer" element={<TransferPage />} />
           <Route path="/transactions" element={<TransactionsPage />} />
+          <Route path="/new-account" element={<NewAccountPage />} />
         </Route>
 
         <Route element={<PrivateRoute requiredRole="Admin" />}>
