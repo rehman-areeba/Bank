@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getAccountsApi, getRecentTransactionsApi } from '../api/accounts';
 import { BalanceCard } from '../components/BalanceCard';
 import { useAuthStore } from '../store/authStore';
+import { dummyTransactions } from '../data/dummyTransactions';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -35,12 +36,34 @@ export const DashboardPage = () => {
     });
   };
 
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('en-PK', {
+  const formatAmount = (amount: number, isCredit: boolean) => {
+    const formatted = new Intl.NumberFormat('en-PK', {
       style: 'currency',
       currency: 'PKR',
     }).format(amount);
+
+    return (
+      <span className={isCredit ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+        {isCredit ? '+' : '-'} {formatted}
+      </span>
+    );
   };
+
+  const getStatusBadge = (status: string) => {
+    const colors: Record<string, string> = {
+      Success: 'bg-green-100 text-green-800',
+      Pending: 'bg-yellow-100 text-yellow-800',
+      Failed: 'bg-red-100 text-red-800',
+    };
+    return (
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[status] || 'bg-gray-100 text-gray-800'}`}>
+        {status}
+      </span>
+    );
+  };
+
+  // Use dummy transactions if no real transactions available
+  const displayTransactions = transactions?.items?.length > 0 ? transactions.items : dummyTransactions;
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -187,7 +210,7 @@ export const DashboardPage = () => {
             </div>
           )}
 
-          {transactions && transactions.items && transactions.items.length > 0 ? (
+          {displayTransactions && displayTransactions.length > 0 ? (
             <div className="transactions-container">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -205,43 +228,47 @@ export const DashboardPage = () => {
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                         Amount
                       </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                        Status
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {transactions.items.slice(0, 5).map((txn: any) => (
-                      <tr key={txn.id} className="hover:bg-gray-50">
+                    {displayTransactions.slice(0, 6).map((txn: any) => (
+                      <tr key={txn.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {formatDate(txn.createdAt)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                            txn.transactionType === 'Deposit' ? 'bg-green-100 text-green-800' :
+                            txn.transactionType === 'Withdrawal' ? 'bg-red-100 text-red-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
                             {txn.transactionType}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{txn.description}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">
-                          {formatAmount(txn.amount)}
+                        <td className="px-6 py-4 text-sm text-gray-700">{txn.description}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                          {formatAmount(txn.amount, txn.isCredit)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          {getStatusBadge(txn.status)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+              {!transactions?.items?.length && (
+                <div className="bg-blue-50 border-t border-blue-200 px-6 py-3">
+                  <p className="text-sm text-blue-800">
+                    <span className="font-semibold">Demo Data:</span> These are sample transactions. Real transactions will appear here once you start using your account.
+                  </p>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="card text-center py-8">
-              <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <p className="text-gray-600 mb-4">No recent transactions</p>
-              <button
-                onClick={() => navigate('/transfer')}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Make Your First Transfer
-              </button>
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
