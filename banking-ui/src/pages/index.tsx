@@ -1,5 +1,5 @@
-export const LoginPage = () => <div>Login Page</div>;
-export const RegisterPage = () => <div>Register Page</div>;
+export { LoginPage } from './LoginPage';
+export { RegisterPage } from './RegisterPage';
 export const DashboardPage = () => <div>Dashboard Page</div>;
 export const TransferPage = () => <div>Transfer Page</div>;
 export const TransactionsPage = () => <div>Transactions Page</div>;
