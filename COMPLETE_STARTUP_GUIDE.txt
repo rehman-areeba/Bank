@@ -1,0 +1,309 @@
+===============================================
+COMPLETE STARTUP GUIDE - BANKING APPLICATION
+===============================================
+
+✅ ISSUE FIXED: FluentValidation using statement added
+✅ Backend builds successfully
+✅ Correct ports configured (7253 for backend, 5173 for frontend)
+
+===============================================
+QUICK START (RECOMMENDED)
+===============================================
+
+Double-click: START.bat
+
+This will:
+1. Start backend on https://localhost:7253
+2. Start frontend on http://localhost:5173
+3. Open browser automatically
+
+===============================================
+MANUAL START (STEP BY STEP)
+===============================================
+
+STEP 1: START BACKEND
+---------------------
+Open Terminal/CMD:
+
+cd C:\Users\HP\Documents\GitHub\Bank\BankingApi
+dotnet run
+
+Expected output:
+  Building...
+  info: Microsoft.Hosting.Lifetime[14]
+        Now listening on: https://localhost:7253
+  info: Microsoft.Hosting.Lifetime[14]
+        Now listening on: http://localhost:5245
+
+✅ Backend is ready when you see "Now listening on"
+
+STEP 2: START FRONTEND
+----------------------
+Open NEW Terminal/CMD:
+
+cd C:\Users\HP\Documents\GitHub\Bank\banking-ui
+npm run dev
+
+Expected output:
+  VITE v5.x.x  ready in xxx ms
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+
+✅ Frontend is ready when you see the Local URL
+
+STEP 3: OPEN BROWSER
+--------------------
+Navigate to: http://localhost:5173
+
+===============================================
+VERIFY BACKEND IS RUNNING
+===============================================
+
+Option 1: Check Swagger
+------------------------
+Open: https://localhost:7253/swagger
+
+If you see certificate warning:
+- Click "Advanced"
+- Click "Proceed to localhost (unsafe)"
+- This is normal for local development
+
+You should see Swagger UI with API endpoints.
+
+Option 2: Test API Directly
+---------------------------
+Open: https://localhost:7253/api/accounts
+
+Expected: 401 Unauthorized (this is correct - means API is working)
+
+===============================================
+TEST REGISTRATION
+===============================================
+
+1. Go to: http://localhost:5173
+2. Click "Register here"
+3. Fill the form:
+
+   Full Name: John Doe
+   Email: john@example.com
+   Password: Password123!
+   Confirm Password: Password123!
+
+   ⚠️ PASSWORD REQUIREMENTS:
+   - At least 8 characters
+   - One uppercase letter (A-Z)
+   - One lowercase letter (a-z)
+   - One digit (0-9)
+   - One special character (!@#$%^&*)
+
+4. Click "Create Account"
+
+EXPECTED RESULT:
+✅ Success message
+✅ Auto-login
+✅ Redirect to dashboard
+✅ See "Welcome, John Doe" in navbar
+✅ See default Savings account with PKR 0.00
+
+===============================================
+TROUBLESHOOTING
+===============================================
+
+❌ ERROR: "dotnet: command not found"
+SOLUTION: Install .NET 8.0 SDK from microsoft.com/net/download
+
+❌ ERROR: "npm: command not found"
+SOLUTION: Install Node.js from nodejs.org
+
+❌ ERROR: Backend build fails
+SOLUTION: 
+  cd BankingApi
+  dotnet restore
+  dotnet build
+
+❌ ERROR: "Database connection failed"
+SOLUTION:
+  1. Verify SQL Server is running
+  2. Check connection string in appsettings.json
+  3. Run: dotnet ef database update
+
+❌ ERROR: Frontend shows "ERR_CONNECTION_REFUSED"
+SOLUTION:
+  1. Ensure backend is running (check terminal)
+  2. Verify backend URL: https://localhost:7253
+  3. Check .env file has: VITE_API_URL=https://localhost:7253
+
+❌ ERROR: "Registration failed" with no details
+SOLUTION:
+  1. Open browser DevTools (F12)
+  2. Go to Console tab
+  3. Look for "Registration error:" message
+  4. Check Network tab for API response
+  5. Verify backend terminal for errors
+
+❌ ERROR: SSL Certificate error
+SOLUTION:
+  dotnet dev-certs https --trust
+  Restart browser
+
+❌ ERROR: Port already in use
+SOLUTION:
+  Backend (7253):
+    netstat -ano | findstr :7253
+    taskkill /PID <process_id> /F
+  
+  Frontend (5173):
+    netstat -ano | findstr :5173
+    taskkill /PID <process_id> /F
+
+❌ ERROR: "Email already registered"
+SOLUTION:
+  Delete user from database:
+    DELETE FROM Accounts WHERE UserId IN (SELECT Id FROM Users WHERE Email = 'john@example.com');
+    DELETE FROM Users WHERE Email = 'john@example.com';
+
+===============================================
+VERIFY DATABASE
+===============================================
+
+After successful registration:
+
+1. Open SQL Server Management Studio
+2. Connect to: DESKTOP-BD0D62J\SQLEXPRESS
+3. Expand: Databases → BankingDb → Tables
+
+Check Users:
+  SELECT * FROM Users WHERE Email = 'john@example.com';
+
+Check Accounts:
+  SELECT * FROM Accounts WHERE UserId = '<user-id-from-above>';
+
+===============================================
+PACKAGE INSTALLATION (IF NEEDED)
+===============================================
+
+Backend Packages:
+-----------------
+cd BankingApi
+dotnet restore
+
+Or install individually:
+dotnet add package BCrypt.Net-Next
+dotnet add package FluentValidation.AspNetCore
+dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer
+dotnet add package Microsoft.EntityFrameworkCore.SqlServer
+dotnet add package Microsoft.EntityFrameworkCore.Tools
+dotnet add package Swashbuckle.AspNetCore
+
+Frontend Packages:
+------------------
+cd banking-ui
+npm install
+
+Or install individually:
+npm install axios react-router-dom @tanstack/react-query zustand
+
+===============================================
+DEVELOPMENT TIPS
+===============================================
+
+Auto-reload Backend:
+--------------------
+cd BankingApi
+dotnet watch run
+
+This will automatically rebuild when you change code.
+
+View Backend Logs:
+------------------
+Backend terminal shows all API requests and errors.
+Look for:
+- HTTP requests: GET /api/accounts
+- Errors: "An unhandled exception occurred"
+- Database queries (if logging enabled)
+
+View Frontend Logs:
+-------------------
+Open DevTools (F12) → Console tab
+Shows:
+- API calls
+- Errors
+- Registration/Login attempts
+
+Test API with Swagger:
+----------------------
+1. Open: https://localhost:7253/swagger
+2. Try endpoints without frontend
+3. Test authentication flow
+4. View request/response formats
+
+===============================================
+STOPPING THE APPLICATION
+===============================================
+
+Backend:
+--------
+Press Ctrl+C in the terminal running dotnet run
+
+Frontend:
+---------
+Press Ctrl+C in the terminal running npm run dev
+
+Or close the terminal windows.
+
+===============================================
+NEXT STEPS AFTER REGISTRATION
+===============================================
+
+1. TEST LOGIN:
+   - Logout from dashboard
+   - Go to /login
+   - Enter credentials
+   - Should login successfully
+
+2. ADD BALANCE (for testing transfers):
+   Open SQL Server Management Studio:
+   
+   UPDATE Accounts 
+   SET Balance = 10000 
+   WHERE AccountNumber = '<your-account-number>';
+
+3. REGISTER SECOND USER:
+   - Logout
+   - Register another user
+   - Note their account number
+
+4. TEST TRANSFER:
+   - Login as first user
+   - Go to Transfer page
+   - Transfer to second user's account number
+   - Check both balances
+
+===============================================
+IMPORTANT URLS
+===============================================
+
+Frontend:     http://localhost:5173
+Backend API:  https://localhost:7253
+Swagger UI:   https://localhost:7253/swagger
+
+API Endpoints:
+- POST /api/auth/register
+- POST /api/auth/login
+- GET  /api/auth/me
+- GET  /api/accounts
+- POST /api/transfers
+- GET  /api/accounts/{id}/transactions
+
+===============================================
+SUPPORT
+===============================================
+
+If issues persist:
+1. Check all terminals for error messages
+2. Verify database is running
+3. Check firewall settings
+4. Ensure ports 7253 and 5173 are available
+5. Review error logs in backend terminal
+
+===============================================
