@@ -16,7 +16,10 @@ public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration) :
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken = default)
     {
-        var existingUser = await _unitOfWork.Accounts.GetByAccountNumberAsync(request.Email, cancellationToken);
+        // Check if email already exists by querying Users table directly
+        var existingUser = await _unitOfWork.Context.Users
+            .FirstOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
+        
         if (existingUser != null)
             throw new InvalidOperationException("Email already registered");
 
@@ -29,6 +32,9 @@ public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration) :
             Role = "Customer",
             CreatedAt = DateTime.UtcNow
         };
+
+        // Add user to context
+        await _unitOfWork.Context.Users.AddAsync(user, cancellationToken);
 
         var account = new Account
         {
@@ -51,10 +57,11 @@ public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration) :
 
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
     {
-        var accounts = await _unitOfWork.Accounts.GetByUserIdAsync(Guid.Empty, cancellationToken);
-        var user = accounts.FirstOrDefault()?.User;
+        // Find user by email
+        var user = await _unitOfWork.Context.Users
+            .FirstOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
 
-        if (user == null || user.Email != request.Email)
+        if (user == null)
             throw new UnauthorizedAccessException("Invalid email or password");
 
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))

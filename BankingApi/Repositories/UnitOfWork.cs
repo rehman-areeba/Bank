@@ -14,6 +14,7 @@ public class UnitOfWork : IUnitOfWork
         _context = context;
     }
 
+    public BankingDbContext Context => _context;
     public IAccountRepository Accounts => _accounts ??= new AccountRepository(_context);
     public ITransactionRepository Transactions => _transactions ??= new TransactionRepository(_context);
     public IAuditRepository AuditLogs => _auditLogs ??= new AuditRepository(_context);

@@ -6,11 +6,10 @@ interface LoginRequest {
 }
 
 interface RegisterRequest {
-  name: string;
+  fullName: string;
   email: string;
   password: string;
-  phoneNumber?: string;
-  address?: string;
+  confirmPassword: string;
 }
 
 interface AuthResponse {

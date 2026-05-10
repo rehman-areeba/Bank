@@ -5,24 +5,22 @@ import { registerApi } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
 
 export const RegisterPage = () => {
-  const [name, setName] = useState('');
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [address, setAddress] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { login } = useAuthStore();
 
   const mutation = useMutation({
-    mutationFn: () => registerApi({ name, email, password, phoneNumber, address }),
+    mutationFn: () => registerApi({ fullName, email, password, confirmPassword }),
     onSuccess: (data) => {
       login(data.token, data.user);
       navigate('/dashboard');
     },
     onError: (err: any) => {
-      setError(err.response?.data?.message || 'Registration failed');
+      setError(err.response?.data?.message || err.response?.data?.title || 'Registration failed');
     },
   });
 
@@ -30,7 +28,7 @@ export const RegisterPage = () => {
     e.preventDefault();
     setError('');
 
-    if (!name.trim()) {
+    if (!fullName.trim()) {
       setError('Full name is required');
       return;
     }
@@ -42,6 +40,27 @@ export const RegisterPage = () => {
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters');
+      return;
+    }
+
+    // Backend password validation requirements
+    if (!/[A-Z]/.test(password)) {
+      setError('Password must contain at least one uppercase letter');
+      return;
+    }
+
+    if (!/[a-z]/.test(password)) {
+      setError('Password must contain at least one lowercase letter');
+      return;
+    }
+
+    if (!/[0-9]/.test(password)) {
+      setError('Password must contain at least one digit');
+      return;
+    }
+
+    if (!/[\W_]/.test(password)) {
+      setError('Password must contain at least one special character');
       return;
     }
 
@@ -67,14 +86,14 @@ export const RegisterPage = () => {
           )}
 
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
               Full Name
             </label>
             <input
-              id="name"
+              id="fullName"
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="John Doe"
               disabled={mutation.isPending}
@@ -109,6 +128,9 @@ export const RegisterPage = () => {
               placeholder="••••••••"
               disabled={mutation.isPending}
             />
+            <p className="mt-1 text-xs text-gray-500">
+              Must contain: uppercase, lowercase, digit, special character (min 8 chars)
+            </p>
           </div>
 
           <div>
@@ -122,36 +144,6 @@ export const RegisterPage = () => {
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="••••••••"
-              disabled={mutation.isPending}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
-              Phone Number (Optional)
-            </label>
-            <input
-              id="phoneNumber"
-              type="tel"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="+1 (555) 000-0000"
-              disabled={mutation.isPending}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-              Address (Optional)
-            </label>
-            <input
-              id="address"
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="123 Main St, City, State"
               disabled={mutation.isPending}
             />
           </div>
