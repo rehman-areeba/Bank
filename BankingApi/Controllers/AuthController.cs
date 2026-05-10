@@ -1,5 +1,6 @@
 using BankingApi.DTOs;
 using BankingApi.Services;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
