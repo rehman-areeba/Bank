@@ -6,16 +6,17 @@ interface ErrorCardProps {
 }
 
 export const ErrorCard = ({ message, onRetry }: ErrorCardProps) => (
-  <div className="bg-white rounded-xl border border-red-100 p-6 flex flex-col items-center text-center"
-    style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-    <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-3">
+  <div className="rounded-xl p-6 flex flex-col items-center text-center"
+    style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
+    <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3"
+      style={{ background: 'rgba(239,68,68,0.1)' }}>
       <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
           d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
       </svg>
     </div>
-    <p className="text-gray-800 font-semibold mb-1">Something went wrong</p>
-    <p className="text-sm text-gray-500 mb-4">{message}</p>
+    <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Something went wrong</p>
+    <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{message}</p>
     {onRetry && (
       <button
         onClick={onRetry}
@@ -53,15 +54,16 @@ const ICONS = {
 };
 
 export const EmptyState = ({ title, description, actionLabel, onAction, icon }: EmptyStateProps) => (
-  <div className="bg-white rounded-xl p-10 flex flex-col items-center text-center"
-    style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <div className="rounded-xl p-10 flex flex-col items-center text-center"
+    style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
+    <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+      style={{ background: 'var(--bg-tertiary)' }}>
+      <svg className="w-8 h-8" style={{ color: 'var(--text-muted)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
         {ICONS[icon]}
       </svg>
     </div>
-    <p className="text-gray-800 font-semibold text-lg mb-1">{title}</p>
-    <p className="text-sm text-gray-500 mb-6 max-w-xs">{description}</p>
+    <p className="font-semibold text-lg mb-1" style={{ color: 'var(--text-primary)' }}>{title}</p>
+    <p className="text-sm mb-6 max-w-xs" style={{ color: 'var(--text-secondary)' }}>{description}</p>
     {actionLabel && onAction && (
       <button
         onClick={onAction}

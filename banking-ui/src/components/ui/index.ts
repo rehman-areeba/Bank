@@ -4,3 +4,4 @@ export { ToastProvider, useToast } from './Toast';
 export { ErrorCard, EmptyState } from './ErrorAndEmpty';
 export { AccountCardSkeleton, TransactionRowSkeleton, ChartSkeleton } from './Skeletons';
 export { PrivateRoute } from './PrivateRoute';
+export { ThemeToggle } from './ThemeToggle';

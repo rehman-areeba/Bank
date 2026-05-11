@@ -1,22 +1,13 @@
-/* Banking Dashboard Specific Styles */
+/* ─── Dashboard Layout ───────────────────────────────────────────────────────── */
 
-/* Remove default styles */
-.counter {
-  display: none;
-}
-
-.hero {
-  display: none;
-}
-
-/* Dashboard Layout */
 .dashboard-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
 }
 
-/* Account Cards Grid */
+/* ─── Grids ──────────────────────────────────────────────────────────────────── */
+
 .accounts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -24,50 +15,121 @@
   margin-bottom: 2rem;
 }
 
-/* Quick Actions Grid */
 .actions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
 }
 
-/* Transaction Table Container */
+/* ─── Transactions Table ─────────────────────────────────────────────────────── */
+
 .transactions-container {
-  background: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  background: var(--card-bg);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-color);
   overflow: hidden;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
-/* Account Card hover lift */
+.transactions-container table thead {
+  background-color: var(--table-header);
+  transition: background-color 0.3s ease;
+}
+
+.transactions-container table thead th {
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
+}
+
+.transactions-container table tbody tr {
+  border-bottom: 1px solid var(--row-divider);
+  transition: background-color 0.15s ease;
+}
+
+.transactions-container table tbody tr:hover {
+  background-color: var(--table-hover);
+}
+
+.transactions-container table tbody td {
+  color: var(--text-primary);
+  transition: color 0.3s ease;
+}
+
+/* ─── Account Card ───────────────────────────────────────────────────────────── */
+
 .account-card {
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, background-color 0.3s ease;
 }
 
 .account-card:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.13) !important;
+  box-shadow: var(--shadow-hover) !important;
   transform: translateY(-3px);
 }
 
-/* Responsive Design */
+/* ─── Navbar ─────────────────────────────────────────────────────────────────── */
+
+.navbar {
+  background-color: var(--navbar-bg);
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* ─── Page background ────────────────────────────────────────────────────────── */
+
+.page-bg {
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  transition: background-color 0.3s ease;
+}
+
+/* ─── Auth card (login/register) ─────────────────────────────────────────────── */
+
+.auth-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-md);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* ─── Modal overlay ──────────────────────────────────────────────────────────── */
+
+.modal-content {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* ─── Skeleton shimmer ───────────────────────────────────────────────────────── */
+
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-shine) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 4px;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────────── */
+
 @media (max-width: 768px) {
-  .dashboard-container {
-    padding: 1rem;
-  }
-  
-  .accounts-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .actions-grid {
-    grid-template-columns: 1fr;
-  }
+  .dashboard-container { padding: 1rem; }
+  .accounts-grid { grid-template-columns: 1fr; gap: 1rem; }
+  .actions-grid  { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 480px) {
-  .dashboard-container {
-    padding: 0.75rem;
-  }
+  .dashboard-container { padding: 0.75rem; }
+  .actions-grid  { grid-template-columns: 1fr; }
 }
