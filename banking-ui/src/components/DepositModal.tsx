@@ -14,6 +14,8 @@ interface Account {
 interface DepositModalProps {
   accounts: Account[];
   onClose: () => void;
+  onSuccess?: () => void;
+  onError?: (msg: string) => void;
 }
 
 const Spinner = () => (
@@ -23,7 +25,7 @@ const Spinner = () => (
   </svg>
 );
 
-export const DepositModal = ({ accounts, onClose }: DepositModalProps) => {
+export const DepositModal = ({ accounts, onClose, onSuccess, onError }: DepositModalProps) => {
   const queryClient = useQueryClient();
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? '');
   const [amount, setAmount] = useState('');
@@ -46,9 +48,12 @@ export const DepositModal = ({ accounts, onClose }: DepositModalProps) => {
       setSuccess(`Deposit successful! New balance: ${formatPKR(data.newBalance)}`);
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['recentTransactions'] });
+      onSuccess?.();
     },
     onError: (err: any) => {
-      setError(err.response?.data?.detail || err.response?.data?.message || 'Deposit failed');
+      const msg = err.response?.data?.detail || err.response?.data?.message || 'Deposit failed';
+      setError(msg);
+      onError?.(msg);
     },
   });
 

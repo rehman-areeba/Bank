@@ -14,6 +14,8 @@ interface Account {
 interface TransferModalProps {
   accounts: Account[];
   onClose: () => void;
+  onSuccess?: () => void;
+  onError?: (msg: string) => void;
 }
 
 const Spinner = () => (
@@ -23,7 +25,7 @@ const Spinner = () => (
   </svg>
 );
 
-export const TransferModal = ({ accounts, onClose }: TransferModalProps) => {
+export const TransferModal = ({ accounts, onClose, onSuccess, onError }: TransferModalProps) => {
   const queryClient = useQueryClient();
   const [fromAccountId, setFromAccountId] = useState(accounts[0]?.id ?? '');
   const [toAccountNumber, setToAccountNumber] = useState('');
@@ -44,9 +46,12 @@ export const TransferModal = ({ accounts, onClose }: TransferModalProps) => {
       setSuccess(`Transfer successful! New balance: ${formatPKR(data.updatedBalance)}`);
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['recentTransactions'] });
+      onSuccess?.();
     },
     onError: (err: any) => {
-      setError(err.response?.data?.detail || err.response?.data?.message || 'Transfer failed');
+      const msg = err.response?.data?.detail || err.response?.data?.message || 'Transfer failed';
+      setError(msg);
+      onError?.(msg);
     },
   });
 

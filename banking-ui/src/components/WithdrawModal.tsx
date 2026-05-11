@@ -14,6 +14,8 @@ interface Account {
 interface WithdrawModalProps {
   accounts: Account[];
   onClose: () => void;
+  onSuccess?: () => void;
+  onError?: (msg: string) => void;
 }
 
 const Spinner = () => (
@@ -23,7 +25,7 @@ const Spinner = () => (
   </svg>
 );
 
-export const WithdrawModal = ({ accounts, onClose }: WithdrawModalProps) => {
+export const WithdrawModal = ({ accounts, onClose, onSuccess, onError }: WithdrawModalProps) => {
   const queryClient = useQueryClient();
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? '');
   const [amount, setAmount] = useState('');
@@ -51,9 +53,12 @@ export const WithdrawModal = ({ accounts, onClose }: WithdrawModalProps) => {
       setSuccess(`Withdrawal successful! New balance: ${formatPKR(data.newBalance)}`);
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['recentTransactions'] });
+      onSuccess?.();
     },
     onError: (err: any) => {
-      setError(err.response?.data?.detail || err.response?.data?.message || 'Withdrawal failed');
+      const msg = err.response?.data?.detail || err.response?.data?.message || 'Withdrawal failed';
+      setError(msg);
+      onError?.(msg);
     },
   });
 
