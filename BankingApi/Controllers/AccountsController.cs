@@ -82,6 +82,28 @@ public class AccountsController(IAccountService accountService, ITransactionRepo
         });
     }
 
+    [HttpPost("{id}/deposit")]
+    public async Task<ActionResult<object>> Deposit(
+        Guid id,
+        [FromBody] DepositWithdrawDto dto,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetUserIdFromClaims();
+        var newBalance = await _accountService.DepositAsync(id, userId, dto.Amount, dto.Description, cancellationToken);
+        return Ok(new { accountId = id, newBalance, message = "Deposit successful" });
+    }
+
+    [HttpPost("{id}/withdraw")]
+    public async Task<ActionResult<object>> Withdraw(
+        Guid id,
+        [FromBody] DepositWithdrawDto dto,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetUserIdFromClaims();
+        var newBalance = await _accountService.WithdrawAsync(id, userId, dto.Amount, dto.Description, cancellationToken);
+        return Ok(new { accountId = id, newBalance, message = "Withdrawal successful" });
+    }
+
     [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<ActionResult> DeactivateAccount(Guid id, CancellationToken cancellationToken)

@@ -2,6 +2,7 @@ using BankingApi.DTOs;
 using BankingApi.Middleware;
 using BankingApi.Models;
 using BankingApi.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace BankingApi.Services;
 
@@ -81,6 +82,79 @@ public class AccountService(IUnitOfWork unitOfWork) : IAccountService
         account.IsActive = false;
         await _unitOfWork.Accounts.UpdateAsync(account, cancellationToken);
         await _unitOfWork.CommitAsync(cancellationToken);
+    }
+
+    public async Task<decimal> DepositAsync(Guid accountId, Guid userId, decimal amount, string? description, CancellationToken cancellationToken = default)
+    {
+        if (amount < 100)
+            throw new InvalidOperationException("Minimum deposit amount is PKR 100");
+
+        var account = await _unitOfWork.Accounts.GetByIdAsync(accountId, cancellationToken)
+            ?? throw new NotFoundException($"Account {accountId} not found");
+
+        if (account.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have permission to access this account");
+
+        if (!account.IsActive)
+            throw new InvalidOperationException("Cannot deposit to a frozen account");
+
+        account.Balance += amount;
+
+        var transaction = new Transaction
+        {
+            Id = Guid.NewGuid(),
+            FromAccountId = accountId,
+            ToAccountId = accountId,
+            Type = "Deposit",
+            Amount = amount,
+            Description = description ?? "Cash Deposit",
+            Status = "Completed",
+            CreatedAt = DateTime.UtcNow,
+        };
+
+        await _unitOfWork.Accounts.UpdateAsync(account, cancellationToken);
+        await _unitOfWork.Context.Transactions.AddAsync(transaction, cancellationToken);
+        await _unitOfWork.CommitAsync(cancellationToken);
+
+        return account.Balance;
+    }
+
+    public async Task<decimal> WithdrawAsync(Guid accountId, Guid userId, decimal amount, string? description, CancellationToken cancellationToken = default)
+    {
+        if (amount < 100)
+            throw new InvalidOperationException("Minimum withdrawal amount is PKR 100");
+
+        var account = await _unitOfWork.Accounts.GetByIdAsync(accountId, cancellationToken)
+            ?? throw new NotFoundException($"Account {accountId} not found");
+
+        if (account.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have permission to access this account");
+
+        if (!account.IsActive)
+            throw new InvalidOperationException("Cannot withdraw from a frozen account");
+
+        if (account.Balance < amount)
+            throw new InvalidOperationException("Insufficient balance");
+
+        account.Balance -= amount;
+
+        var transaction = new Transaction
+        {
+            Id = Guid.NewGuid(),
+            FromAccountId = accountId,
+            ToAccountId = null,
+            Type = "Withdrawal",
+            Amount = amount,
+            Description = description ?? "Cash Withdrawal",
+            Status = "Completed",
+            CreatedAt = DateTime.UtcNow,
+        };
+
+        await _unitOfWork.Accounts.UpdateAsync(account, cancellationToken);
+        await _unitOfWork.Context.Transactions.AddAsync(transaction, cancellationToken);
+        await _unitOfWork.CommitAsync(cancellationToken);
+
+        return account.Balance;
     }
 
     private async Task<string> GenerateUniqueAccountNumberAsync(CancellationToken cancellationToken)

@@ -1,13 +1,20 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { getAccountsApi, getRecentTransactionsApi } from '../api/accounts';
 import { BalanceCard } from '../components/BalanceCard';
+import { TransferModal } from '../components/TransferModal';
+import { DepositModal } from '../components/DepositModal';
+import { WithdrawModal } from '../components/WithdrawModal';
 import { useAuthStore } from '../store/authStore';
 import { dummyTransactions } from '../data/dummyTransactions';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const [showTransfer, setShowTransfer] = useState(false);
+  const [showDeposit, setShowDeposit] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(false);
 
   const {
     data: accounts,
@@ -148,13 +155,31 @@ export const DashboardPage = () => {
           <h3 className="section-title">Quick Actions</h3>
           <div className="actions-grid">
             <button
-              onClick={() => navigate('/transfer')}
+              onClick={() => setShowTransfer(true)}
               className="card text-center py-6 bg-blue-600 text-white hover:bg-blue-700 transition-colors cursor-pointer border-0"
             >
               <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
               </svg>
               <span className="font-medium">Transfer Money</span>
+            </button>
+            <button
+              onClick={() => setShowDeposit(true)}
+              className="card text-center py-6 bg-green-600 text-white hover:bg-green-700 transition-colors cursor-pointer border-0"
+            >
+              <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span className="font-medium">Deposit</span>
+            </button>
+            <button
+              onClick={() => setShowWithdraw(true)}
+              className="card text-center py-6 bg-red-600 text-white hover:bg-red-700 transition-colors cursor-pointer border-0"
+            >
+              <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+              </svg>
+              <span className="font-medium">Withdraw</span>
             </button>
             <button
               onClick={() => navigate('/transactions')}
@@ -271,6 +296,17 @@ export const DashboardPage = () => {
           ) : null}
         </div>
       </div>
+
+      {/* Modals */}
+      {showTransfer && accounts && accounts.length > 0 && (
+        <TransferModal accounts={accounts} onClose={() => setShowTransfer(false)} />
+      )}
+      {showDeposit && accounts && accounts.length > 0 && (
+        <DepositModal accounts={accounts} onClose={() => setShowDeposit(false)} />
+      )}
+      {showWithdraw && accounts && accounts.length > 0 && (
+        <WithdrawModal accounts={accounts} onClose={() => setShowWithdraw(false)} />
+      )}
     </div>
   );
 };
