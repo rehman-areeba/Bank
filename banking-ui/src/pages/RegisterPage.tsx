@@ -1,8 +1,15 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
-import { registerApi } from '../api/auth';
+import { authService } from '../services/authService';
 import { useAuthStore } from '../store/authStore';
+
+const extractError = (err: any): string => {
+  if (err?.message && !err.response) return err.message; // network error
+  const d = err?.response?.data;
+  if (d?.errors?.length) return d.errors.map((e: any) => e.message).join(', ');
+  return d?.detail || d?.message || d?.title || 'Registration failed. Please try again.';
+};
 
 export const RegisterPage = () => {
   const [fullName, setFullName] = useState('');
@@ -14,28 +21,13 @@ export const RegisterPage = () => {
   const { login } = useAuthStore();
 
   const mutation = useMutation({
-    mutationFn: () => registerApi({ fullName, email, password, confirmPassword }),
+    mutationFn: () => authService.register({ fullName, email, password, confirmPassword }),
     onSuccess: (data) => {
       login(data.token, data.user);
       navigate('/dashboard');
     },
     onError: (err: any) => {
-      console.error('Registration error:', err.response?.data);
-      
-      // Handle validation errors
-      if (err.response?.data?.errors) {
-        const errorMessages = err.response.data.errors
-          .map((e: any) => e.message)
-          .join(', ');
-        setError(errorMessages);
-      } else {
-        setError(
-          err.response?.data?.detail || 
-          err.response?.data?.message || 
-          err.response?.data?.title || 
-          'Registration failed. Please try again.'
-        );
-      }
+      setError(extractError(err));
     },
   });
 

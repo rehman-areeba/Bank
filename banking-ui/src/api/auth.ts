@@ -1,64 +1,8 @@
-import axiosClient from './axiosClient';
-
-interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-interface RegisterRequest {
-  fullName: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
-
-interface AuthResponse {
-  token: string;
-  expiresAt: string;
-  userId: string;
-  fullName: string;
-  role: string;
-}
-
-interface MeResponse {
-  userId: string;
-  email: string;
-  role: string;
-  fullName: string;
-}
-
-export const loginApi = async (email: string, password: string) => {
-  const { data } = await axiosClient.post<AuthResponse>('/api/auth/login', { email, password });
-  return {
-    token: data.token,
-    user: {
-      id: data.userId,
-      name: data.fullName,
-      email: email,
-      role: data.role,
-    },
-  };
-};
-
-export const registerApi = async (dto: RegisterRequest) => {
-  const { data } = await axiosClient.post<AuthResponse>('/api/auth/register', dto);
-  return {
-    token: data.token,
-    user: {
-      id: data.userId,
-      name: data.fullName,
-      email: dto.email,
-      role: data.role,
-    },
-  };
-};
-
-export const getMeApi = async () => {
-  const { data } = await axiosClient.get<MeResponse>('/api/auth/me');
-  return {
-    id: data.userId,
-    name: data.fullName,
-    email: data.email,
-    role: data.role,
-  };
-};
+// Re-export from canonical location — use src/services/authService.ts directly
+export { authService as default, authService } from '../services/authService';
+export const loginApi = (email: string, password: string) =>
+  import('../services/authService').then((m) => m.authService.login({ email, password }));
+export const registerApi = (dto: any) =>
+  import('../services/authService').then((m) => m.authService.register(dto));
+export const getMeApi = () =>
+  import('../services/authService').then((m) => m.authService.getMe());

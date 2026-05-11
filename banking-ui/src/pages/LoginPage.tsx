@@ -1,8 +1,15 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
-import { loginApi } from '../api/auth';
+import { authService } from '../services/authService';
 import { useAuthStore } from '../store/authStore';
+
+const extractError = (err: any): string => {
+  if (err?.message && !err.response) return err.message; // network error
+  const d = err?.response?.data;
+  if (d?.errors?.length) return d.errors.map((e: any) => e.message).join(', ');
+  return d?.detail || d?.message || d?.title || 'Login failed. Please check your credentials.';
+};
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -12,19 +19,13 @@ export const LoginPage = () => {
   const { login } = useAuthStore();
 
   const mutation = useMutation({
-    mutationFn: () => loginApi(email, password),
+    mutationFn: () => authService.login({ email, password }),
     onSuccess: (data) => {
       login(data.token, data.user);
       navigate('/dashboard');
     },
     onError: (err: any) => {
-      console.error('Login error:', err.response?.data);
-      setError(
-        err.response?.data?.detail || 
-        err.response?.data?.message || 
-        err.response?.data?.title || 
-        'Login failed. Please check your credentials.'
-      );
+      setError(extractError(err));
     },
   });
 
