@@ -6,6 +6,8 @@ import { BalanceCard } from '../components/BalanceCard';
 import { TransferModal } from '../components/TransferModal';
 import { DepositModal } from '../components/DepositModal';
 import { WithdrawModal } from '../components/WithdrawModal';
+import { IncomeExpenseChart } from '../components/IncomeExpenseChart';
+import { BalanceTrendChart } from '../components/BalanceTrendChart';
 import { useAuthStore } from '../store/authStore';
 import { dummyTransactions } from '../data/dummyTransactions';
 
@@ -211,6 +213,15 @@ export const DashboardPage = () => {
               </svg>
               <span className="font-medium text-gray-700">New Account</span>
             </button>
+          </div>
+        </div>
+
+        {/* Charts Section */}
+        <div className="section">
+          <h3 className="section-title">Financial Overview</h3>
+          <div className="grid-container">
+            <IncomeExpenseChart />
+            <BalanceTrendChart />
           </div>
         </div>
 
