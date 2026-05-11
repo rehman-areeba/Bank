@@ -6,9 +6,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  defs,
-  linearGradient,
-  stop,
 } from 'recharts';
 import { balanceTrendData } from '../data/chartData';
 
@@ -33,7 +30,10 @@ const tickFormatter = (_: any, index: number) => {
 
 export const BalanceTrendChart = () => {
   return (
-    <div className="card">
+    <div
+      className="bg-white p-6"
+      style={{ borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}
+    >
       <div className="mb-4">
         <h3 className="text-lg font-bold text-gray-900">Balance Trend</h3>
         <p className="text-sm text-gray-500">Last 30 days</p>

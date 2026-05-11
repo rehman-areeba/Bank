@@ -29,7 +29,10 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export const IncomeExpenseChart = () => {
   return (
-    <div className="card">
+    <div
+      className="bg-white p-6"
+      style={{ borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}
+    >
       <div className="mb-4">
         <h3 className="text-lg font-bold text-gray-900">Income vs Expenses</h3>
         <p className="text-sm text-gray-500">Last 6 months overview</p>
