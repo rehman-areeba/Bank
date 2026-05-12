@@ -7,7 +7,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { balanceTrendData } from '../data/chartData';
+import { balanceTrendData } from '../../data/chartData';
 
 const formatPKR = (value: number) =>
   `Rs ${new Intl.NumberFormat('en-PK').format(value)}`;

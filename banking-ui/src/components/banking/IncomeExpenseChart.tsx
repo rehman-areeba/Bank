@@ -8,7 +8,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { monthlyData } from '../data/chartData';
+import { monthlyData } from '../../data/chartData';
 
 const formatPKR = (value: number) =>
   `Rs ${new Intl.NumberFormat('en-PK').format(value)}`;

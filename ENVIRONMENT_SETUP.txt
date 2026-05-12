@@ -1,0 +1,141 @@
+===============================================
+ENVIRONMENT CONFIGURATION GUIDE
+===============================================
+
+This guide explains how to properly configure environment-specific settings
+for both the backend API and frontend application.
+
+===============================================
+BACKEND API CONFIGURATION
+===============================================
+
+1. appsettings.json (SAFE - Committed to Git)
+   - Contains safe default values
+   - No secrets or sensitive information
+   - Used as base configuration
+
+2. appsettings.Development.json (LOCAL - NOT in Git)
+   - Copy from appsettings.example.json
+   - Update with your local development values:
+     * SQL Server connection string
+     * JWT secret key (min 32 characters)
+   - This file is gitignored for security
+
+3. appsettings.Production.json (PRODUCTION - NOT in Git)
+   - Copy from appsettings.example.json
+   - Update with production values:
+     * Production database connection
+     * Strong JWT secret key
+     * Production-specific settings
+   - This file is gitignored for security
+
+SETUP STEPS:
+------------
+1. Copy appsettings.example.json to appsettings.Development.json
+2. Update ConnectionStrings.DefaultConnection with your SQL Server details
+3. Generate a strong JWT key (min 32 characters)
+4. Never commit appsettings.Development.json or appsettings.Production.json
+
+EXAMPLE CONNECTION STRINGS:
+---------------------------
+Local SQL Server:
+  "Server=localhost\\SQLEXPRESS;Database=BankingDb;Trusted_Connection=True;TrustServerCertificate=True"
+
+Azure SQL:
+  "Server=tcp:yourserver.database.windows.net,1433;Database=BankingDb;User ID=yourusername;Password=yourpassword;Encrypt=True;TrustServerCertificate=False"
+
+===============================================
+FRONTEND CONFIGURATION
+===============================================
+
+1. .env.example (DOCUMENTATION - Committed to Git)
+   - Shows required environment variables
+   - Contains placeholder values
+   - Used as reference
+
+2. .env.development (LOCAL - NOT in Git)
+   - Already configured with: VITE_API_URL=http://localhost:5245
+   - Points to local backend API
+   - Automatically used in development mode
+
+3. .env.production (PRODUCTION - NOT in Git)
+   - Update VITE_API_URL with your production API URL
+   - Example: https://your-api.azurewebsites.net/api
+   - Used when building for production
+
+SETUP STEPS:
+------------
+1. .env.development is already configured
+2. Update .env.production with your production API URL
+3. Never commit .env.production (use .env.example for documentation)
+
+===============================================
+SECURITY BEST PRACTICES
+===============================================
+
+✓ DO:
+  - Use strong, unique JWT keys (min 32 characters)
+  - Keep development and production keys different
+  - Use environment variables for sensitive data
+  - Commit .example files for documentation
+  - Review .gitignore regularly
+
+✗ DON'T:
+  - Commit appsettings.Development.json
+  - Commit appsettings.Production.json
+  - Commit .env.production
+  - Use weak or default JWT keys
+  - Share secrets in code or documentation
+
+===============================================
+GITIGNORE CONFIGURATION
+===============================================
+
+The following files are excluded from Git:
+
+Backend:
+  - appsettings.Development.json
+  - appsettings.Production.json
+
+Frontend:
+  - .env.local
+  - .env.production
+
+These files contain sensitive information and should never be committed.
+
+===============================================
+DEPLOYMENT CHECKLIST
+===============================================
+
+Before deploying to production:
+
+Backend:
+  ☐ Create appsettings.Production.json with production values
+  ☐ Generate strong JWT key (min 32 characters)
+  ☐ Update database connection string
+  ☐ Set appropriate logging levels
+  ☐ Configure CORS for production domain
+
+Frontend:
+  ☐ Update .env.production with production API URL
+  ☐ Build with: npm run build
+  ☐ Test production build locally: npm run preview
+  ☐ Deploy dist/ folder to hosting service
+
+===============================================
+TROUBLESHOOTING
+===============================================
+
+Issue: "JWT Key not configured"
+Solution: Ensure Jwt:Key is set in appsettings.Development.json
+
+Issue: "Cannot connect to database"
+Solution: Verify ConnectionStrings:DefaultConnection is correct
+
+Issue: "CORS error in frontend"
+Solution: Check VITE_API_URL matches backend URL
+
+Issue: "401 Unauthorized"
+Solution: Verify JWT configuration matches between frontend and backend
+
+===============================================
