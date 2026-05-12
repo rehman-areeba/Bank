@@ -2,7 +2,7 @@
 
 A production-ready banking application built with ASP.NET Core and React, featuring secure money transfers, account management, and comprehensive audit logging.
 
-## 🎯 Overview
+## Overview
 
 This banking system implements core banking operations with enterprise-grade features including ACID-compliant transactions, optimistic concurrency control, JWT-based authentication, comprehensive audit logging, and role-based access control. The system is designed to handle concurrent operations safely while maintaining data integrity and providing a complete audit trail.
 
@@ -17,7 +17,7 @@ This banking system implements core banking operations with enterprise-grade fea
 - **Rate Limiting**: Protection against abuse with configurable rate limits
 - **Comprehensive Testing**: Integration tests using WebApplicationFactory and InMemory database
 
-## 🏗️ Architecture
+##  Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -62,7 +62,7 @@ This banking system implements core banking operations with enterprise-grade fea
 └───────────────────────────────────────────────────────────────────┘
 ```
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
@@ -86,7 +86,7 @@ This banking system implements core banking operations with enterprise-grade fea
 | **DevOps** | Git | Version control |
 | | GitHub Actions | CI/CD (optional) |
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 
@@ -211,7 +211,7 @@ This banking system implements core banking operations with enterprise-grade fea
 | POST | `/api/admin/freeze-account` | Yes | Admin | Freeze user account |
 | GET | `/api/admin/audit-logs` | Yes | Admin | Get audit logs |
 
-## 🔑 Key Design Decisions
+##  Key Design Decisions
 
 ### Optimistic Concurrency with RowVersion
 
@@ -261,7 +261,7 @@ Time | Transaction A              | Transaction B
 T1   | Read Account X: $100       |
 T2   |                            | Read Account X: $100
 T3   | Withdraw $80 (Balance: $20)|
-T4   |                            | Withdraw $80 (Balance: $20) ❌
+T4   |                            | Withdraw $80 (Balance: $20) 
 T5   | Commit                     |
 T6   |                            | Commit (Should fail!)
 ```
@@ -293,7 +293,7 @@ With Serializable isolation, Transaction B would be blocked or rolled back, prev
 - Improves API response times
 - Handles retries for failed operations
 
-## 🧪 Running Tests
+##  Running Tests
 
 ### Integration Tests
 
@@ -321,12 +321,12 @@ dotnet test /p:CollectCoverage=true
 ### Test Coverage
 
 The test suite includes:
-- ✅ Authentication & Authorization (7 tests)
-- ✅ Money Transfers (4 tests)
-- ✅ Account Operations (4 tests)
-- ✅ Concurrency Control
-- ✅ Access Control (403 Forbidden)
-- ✅ Balance Verification
+-  Authentication & Authorization (7 tests)
+-  Money Transfers (4 tests)
+-  Account Operations (4 tests)
+-  Concurrency Control
+-  Access Control (403 Forbidden)
+-  Balance Verification
 
 All tests use:
 - WebApplicationFactory for full integration testing
@@ -352,7 +352,7 @@ All tests use:
 ![Admin](docs/screenshots/admin.png)
 *Admin dashboard for monitoring failed logins and managing accounts*
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 banking-system/
@@ -382,7 +382,7 @@ banking-system/
 └── docs/                       # Documentation
 ```
 
-## 🔒 Security Features
+##  Security Features
 
 - **Password Hashing**: BCrypt with salt rounds
 - **JWT Authentication**: Secure token-based auth with expiration
@@ -393,13 +393,13 @@ banking-system/
 - **XSS Protection**: React's built-in escaping
 - **HTTPS Enforcement**: Redirect HTTP to HTTPS in production
 
-## 🚦 Rate Limiting
+##  Rate Limiting
 
 - **Auth Endpoints**: 10 requests per minute per IP
 - **Transfer Endpoints**: 5 requests per minute per user
 - **Configurable**: Adjust limits in `Program.cs`
 
-## 📊 Performance Considerations
+##  Performance Considerations
 
 - **Database Indexing**: Indexes on frequently queried columns
 - **Query Optimization**: Efficient LINQ queries with proper includes
@@ -407,7 +407,7 @@ banking-system/
 - **Async/Await**: Non-blocking I/O operations throughout
 - **Caching**: Client-side caching with TanStack Query
 
-## 🤝 Contributing
+##  Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -415,24 +415,7 @@ banking-system/
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👥 Authors
-
-- **Your Name** - *Initial work* - [YourGitHub](https://github.com/yourusername)
-
-## 🙏 Acknowledgments
-
-- ASP.NET Core team for the excellent framework
-- React team for the powerful UI library
-- Entity Framework Core for robust ORM capabilities
-- The open-source community for invaluable tools and libraries
-
-## 📞 Support
-
-For support, email support@bankingsystem.com or open an issue in the GitHub repository.
 
 ---
 
