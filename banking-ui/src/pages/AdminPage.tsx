@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { getFailedLoginsApi, freezeAccountApi } from '../api/admin';
-import { getAccountsApi } from '../api/accounts';
 import axiosClient from '../api/axiosClient';
 
 export const AdminPage = () => {

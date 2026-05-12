@@ -18,61 +18,126 @@ export const Navbar = ({ title = 'Banking Dashboard', backTo, backLabel }: Navba
   };
 
   return (
-    <nav className="navbar sticky top-0 z-40 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-
-          {/* Left: back button + title */}
-          <div className="flex items-center gap-4">
-            {backTo && (
-              <button
-                onClick={() => navigate(backTo)}
-                className="flex items-center gap-1 text-sm transition-colors"
-                style={{ color: 'var(--accent)' }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                {backLabel ?? 'Back'}
-              </button>
-            )}
-            <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-              {title}
-            </h1>
-          </div>
-
-          {/* Right: user info + theme toggle + logout */}
-          <div className="flex items-center gap-3">
-            {user && (
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-                <span className="text-sm hidden sm:block" style={{ color: 'var(--text-secondary)' }}>
-                  {user.name}
-                </span>
-                {user.role === 'Admin' && (
-                  <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-100 text-purple-700 hidden sm:block">
-                    Admin
-                  </span>
-                )}
-              </div>
-            )}
-
-            <ThemeToggle />
-
+    <nav className="navbar">
+      <div style={{ 
+        maxWidth: '1400px', 
+        margin: '0 auto', 
+        width: '100%',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        {/* Left: back button + title */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {backTo && (
             <button
-              onClick={handleLogout}
-              className="flex items-center gap-1.5 text-sm transition-colors"
-              style={{ color: '#ef4444' }}
+              onClick={() => navigate(backTo)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                fontSize: '0.875rem',
+                color: 'var(--navbar-text)',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '0.5rem',
+                borderRadius: '6px',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              <span className="hidden sm:block">Logout</span>
+              {backLabel ?? 'Back'}
             </button>
-          </div>
+          )}
+          <h1 className="navbar-brand">{title}</h1>
+        </div>
+
+        {/* Right: user info + theme toggle + logout */}
+        <div className="navbar-menu">
+          {user && (
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.75rem' 
+            }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: 'var(--accent-blue)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff',
+                fontSize: '0.875rem',
+                fontWeight: '700',
+                flexShrink: 0
+              }}>
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+              <span style={{ 
+                fontSize: '0.875rem', 
+                color: 'var(--navbar-text)',
+                display: window.innerWidth < 640 ? 'none' : 'block'
+              }}>
+                {user.name}
+              </span>
+              {user.role === 'Admin' && (
+                <span style={{
+                  padding: '0.25rem 0.5rem',
+                  fontSize: '0.75rem',
+                  fontWeight: '600',
+                  borderRadius: '20px',
+                  background: 'var(--badge-pending-bg)',
+                  color: 'var(--badge-pending-text)',
+                  display: window.innerWidth < 640 ? 'none' : 'inline-block'
+                }}>
+                  Admin
+                </span>
+              )}
+            </div>
+          )}
+
+          <ThemeToggle />
+
+          <button
+            onClick={handleLogout}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.375rem',
+              fontSize: '0.875rem',
+              color: 'var(--accent-red)',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '0.5rem 0.75rem',
+              borderRadius: '6px',
+              transition: 'background-color 0.2s',
+              fontWeight: '500'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span style={{ display: window.innerWidth < 640 ? 'none' : 'block' }}>Logout</span>
+          </button>
         </div>
       </div>
     </nav>
