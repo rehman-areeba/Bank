@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { PageWrapper } from '../components/layout/PageWrapper';
+import { TransactionTable } from '../components/banking/TransactionTable';
 import { accountService } from '../services/accountService';
 import { useAccounts } from '../hooks/useAccounts';
 import { useAuth } from '../hooks/useAuth';
@@ -179,88 +180,23 @@ export const TransactionsPage = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="transactions-container">
-        {isLoading && (
-          <div className="p-10 text-center" style={{ color: 'var(--text-secondary)' }}>
-            Loading transactions...
-          </div>
-        )}
+      {/* Modern Transaction Table */}
+      {error && (
+        <div className="p-10 text-center text-red-500">Failed to load transactions.</div>
+      )}
 
-        {error && (
-          <div className="p-10 text-center text-red-500">Failed to load transactions.</div>
-        )}
-
-        {!isLoading && allTransactions.length === 0 && (
-          <div className="p-10 text-center" style={{ color: 'var(--text-secondary)' }}>
-            No transactions found for the selected filters.
-          </div>
-        )}
-
-        {allTransactions.length > 0 && (
-          <>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y" style={{ borderColor: 'var(--border-color)' }}>
-                <thead style={{ background: 'var(--table-header)' }}>
-                  <tr>
-                    {['ID', 'Date', 'Type', 'Description', 'Amount', 'Status'].map((h) => (
-                      <th key={h}
-                        className={`px-6 py-3 text-xs font-semibold uppercase tracking-wider ${h === 'Amount' ? 'text-right' : h === 'Status' ? 'text-center' : 'text-left'}`}
-                        style={{ color: 'var(--text-secondary)' }}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {allTransactions.map((txn) => (
-                    <tr key={txn.id} className="transition-colors"
-                      style={{ borderBottom: '1px solid var(--row-divider)' }}>
-                      <td className="px-6 py-4 whitespace-nowrap text-xs font-mono"
-                        style={{ color: 'var(--text-muted)' }}>
-                        #{String(txn.id).slice(0, 8)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm"
-                        style={{ color: 'var(--text-primary)' }}>
-                        {formatDate(txn.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${TYPE_COLORS[txn.transactionType] ?? 'bg-gray-100 text-gray-700'}`}>
-                          {txn.transactionType}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm max-w-xs truncate"
-                        style={{ color: 'var(--text-secondary)' }}>
-                        {txn.description || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                        {PKR(txn.amount, txn.transactionType)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[txn.status] ?? 'bg-gray-100 text-gray-700'}`}>
-                          {txn.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {hasNextPage && (
-              <div className="p-4 text-center" style={{ borderTop: '1px solid var(--border-color)' }}>
-                <button
-                  onClick={() => fetchNextPage()}
-                  disabled={isFetchingNextPage}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 text-sm font-medium"
-                >
-                  {isFetchingNextPage ? 'Loading...' : 'Load More'}
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
+      {!error && (
+        <TransactionTable
+          transactions={allTransactions}
+          isLoading={isLoading}
+          onLoadMore={() => fetchNextPage()}
+          hasMore={hasNextPage}
+          showFilters={false}
+          showSearch={true}
+          showPagination={true}
+          pageSize={20}
+        />
+      )}
     </PageWrapper>
   );
 };
