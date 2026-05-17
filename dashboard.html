@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banking Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f1923;
+            color: white;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: #1e2d3d;
+            border-bottom: 0.5px solid rgba(255,255,255,0.08);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3B82F6, #60a5fa);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .username {
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+
+        .theme-toggle {
+            background: transparent;
+            border: 0.5px solid rgba(255,255,255,0.12);
+            color: #3B82F6;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(59,130,246,0.1);
+        }
+
+        .logout-btn {
+            background: #f87171;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .logout-btn:hover {
+            background: #ef4444;
+        }
+
+        .main-content {
+            padding: 28px 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section {
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: white;
+            margin-bottom: 16px;
+        }
+
+        .account-card {
+            background: linear-gradient(135deg, #1e3a5f, #1a2d4a);
+            border: 0.5px solid rgba(59,130,246,0.35);
+            border-radius: 14px;
+            padding: 24px;
+            position: relative;
+            max-width: 400px;
+        }
+
+        .account-type {
+            position: absolute;
+            top: 20px;
+            right: 24px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #94a3b8;
+        }
+
+        .account-number {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #cbd5e1;
+            margin-bottom: 20px;
+        }
+
+        .balance-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+
+        .balance-amount {
+            font-size: 34px;
+            font-weight: 500;
+            color: white;
+            margin-bottom: 16px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #cbd5e1;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+        }
+
+        .action-btn {
+            background: #1e2d3d;
+            border: 0.5px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px 16px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: #243447;
+            border-color: rgba(59,130,246,0.5);
+            box-shadow: 0 0 12px rgba(59,130,246,0.2);
+        }
+
+        .action-icon {
+            color: #60a5fa;
+            width: 32px;
+            height: 32px;
+        }
+
+        .action-label {
+            font-size: 12px;
+            color: #cbd5e1;
+            text-align: center;
+        }
+
+        .overview-panel {
+            background: #131f2e;
+            border: 0.5px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 24px;
+        }
+
+        .chart-legend {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 24px;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #cbd5e1;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+
+        .legend-color.income {
+            background: #3B82F6;
+        }
+
+        .legend-color.expense {
+            background: #f87171;
+        }
+
+        .chart-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 24px;
+            height: 240px;
+            padding: 0 16px;
+        }
+
+        .chart-month {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bars {
+            display: flex;
+            gap: 6px;
+            align-items: flex-end;
+            height: 200px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .bar {
+            width: 20px;
+            border-radius: 4px 4px 0 0;
+            transition: opacity 0.2s;
+        }
+
+        .bar.income {
+            background: #3B82F6;
+        }
+
+        .bar.expense {
+            background: #f87171;
+        }
+
+        .chart-month:hover .bar {
+            opacity: 0.8;
+        }
+
+        .month-label {
+            font-size: 11px;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 1024px) {
+            .quick-actions {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .quick-actions {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .nav-right {
+                gap: 8px;
+            }
+            
+            .username {
+                display: none;
+            }
+
+            .chart-container {
+                gap: 12px;
+            }
+
+            .bar {
+                width: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">🏦 Banking System</div>
+        <div class="nav-right">
+            <div class="avatar">AR</div>
+            <span class="username">Areeba Rehman</span>
+            <button class="theme-toggle">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="5"/>
+                    <line x1="12" y1="1" x2="12" y2="3"/>
+                    <line x1="12" y1="21" x2="12" y2="23"/>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                    <line x1="1" y1="12" x2="3" y2="12"/>
+                    <line x1="21" y1="12" x2="23" y2="12"/>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
+            </button>
+            <button class="logout-btn">Logout</button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <section class="section">
+            <h2 class="section-title">Your Accounts</h2>
+            <div class="account-card">
+                <div class="account-type">Savings</div>
+                <div class="account-number">**** **** **** 4892</div>
+                <div class="balance-label">Available Balance</div>
+                <div class="balance-amount">$24,580.50</div>
+                <div class="status-badge">
+                    <span class="status-dot"></span>
+                    <span>Active</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">Quick Actions</h2>
+            <div class="quick-actions">
+                <button class="action-btn">
+                    <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <polyline points="19 12 12 19 5 12"/>
+                    </svg>
+                    <span class="action-label">Transfer</span>
+                </button>
+                <button class="action-btn">
+                    <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="19" x2="12" y2="5"/>
+                        <polyline points="5 12 12 5 19 12"/>
+                    </svg>
+                    <span class="action-label">Deposit</span>
+                </button>
+                <button class="action-btn">
+                    <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="7" width="20" height="14" rx="2"/>
+                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                    </svg>
+                    <span class="action-label">Withdraw</span>
+                </button>
+                <button class="action-btn">
+                    <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="1" x2="12" y2="23"/>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                    <span class="action-label">Transactions</span>
+                </button>
+                <button class="action-btn">
+                    <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    <span class="action-label">New Account</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">Financial Overview</h2>
+            <div class="overview-panel">
+                <div class="chart-legend">
+                    <div class="legend-item">
+                        <div class="legend-color income"></div>
+                        <span>Income</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color expense"></div>
+                        <span>Expenses</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-month">
+                        <div class="bars">
+                            <div class="bar income" style="height: 75%;"></div>
+                            <div class="bar expense" style="height: 55%;"></div>
+                        </div>
+                        <div class="month-label">Jan</div>
+                    </div>
+                    <div class="chart-month">
+                        <div class="bars">
+                            <div class="bar income" style="height: 85%;"></div>
+                            <div class="bar expense" style="height: 60%;"></div>
+                        </div>
+                        <div class="month-label">Feb</div>
+                    </div>
+                    <div class="chart-month">
+                        <div class="bars">
+                            <div class="bar income" style="height: 70%;"></div>
+                            <div class="bar expense" style="height: 65%;"></div>
+                        </div>
+                        <div class="month-label">Mar</div>
+                    </div>
+                    <div class="chart-month">
+                        <div class="bars">
+                            <div class="bar income" style="height: 90%;"></div>
+                            <div class="bar expense" style="height: 50%;"></div>
+                        </div>
+                        <div class="month-label">Apr</div>
+                    </div>
+                    <div class="chart-month">
+                        <div class="bars">
+                            <div class="bar income" style="height: 80%;"></div>
+                            <div class="bar expense" style="height: 70%;"></div>
+                        </div>
+                        <div class="month-label">May</div>
+                    </div>
+                    <div class="chart-month">
+                        <div class="bars">
+                            <div class="bar income" style="height: 95%;"></div>
+                            <div class="bar expense" style="height: 45%;"></div>
+                        </div>
+                        <div class="month-label">Jun</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
