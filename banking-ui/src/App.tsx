@@ -12,6 +12,7 @@ import {
   NewAccountPage,
   NotFoundPage,
 } from './pages';
+import { FintechDashboard } from './pages/FintechDashboard';
 
 function App() {
   const { initialize, isAuthenticated } = useAuthStore();
@@ -33,7 +34,8 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
 
         <Route element={<PrivateRoute />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/dashboard" element={<FintechDashboard />} />
+          <Route path="/dashboard-old" element={<DashboardPage />} />
           <Route path="/transfer" element={<TransferPage />} />
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/new-account" element={<NewAccountPage />} />
