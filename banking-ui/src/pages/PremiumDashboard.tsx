@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { PremiumLayout } from '../components/layout/PremiumLayout';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccounts } from '../hooks/useAccounts';
@@ -136,6 +137,7 @@ export const PremiumDashboard = () => {
   ];
 
   return (
+    <PremiumLayout>
     <div className="min-h-screen bg-gradient-to-br from-zinc-50 via-white to-zinc-50">
       {/* Header */}
       <motion.div
@@ -445,5 +447,6 @@ export const PremiumDashboard = () => {
         </motion.div>
       </div>
     </div>
+    </PremiumLayout>
   );
 };
