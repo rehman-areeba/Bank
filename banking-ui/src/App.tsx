@@ -13,6 +13,7 @@ import {
   NotFoundPage,
 } from './pages';
 import { FintechDashboard } from './pages/FintechDashboard';
+import { PremiumDashboard } from './pages/PremiumDashboard';
 
 function App() {
   const { initialize, isAuthenticated } = useAuthStore();
@@ -34,7 +35,8 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
 
         <Route element={<PrivateRoute />}>
-          <Route path="/dashboard" element={<FintechDashboard />} />
+          <Route path="/dashboard" element={<PremiumDashboard />} />
+          <Route path="/dashboard-fintech" element={<FintechDashboard />} />
           <Route path="/dashboard-old" element={<DashboardPage />} />
           <Route path="/transfer" element={<TransferPage />} />
           <Route path="/transactions" element={<TransactionsPage />} />
