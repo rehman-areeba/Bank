@@ -30,7 +30,7 @@ export const BalanceCard = ({ accountNumber, type, balance, isActive }: BalanceC
         borderRadius: '12px',
         transition: 'box-shadow 0.2s ease, transform 0.2s ease',
       }}
-      className={`account-card bg-white p-6 flex flex-col gap-4 ${
+      className={`account-card bg-white p-6 flex flex-col gap-4 w-full max-w-full ${
         !isActive ? 'opacity-60' : ''
       }`}
     >

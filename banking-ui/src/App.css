@@ -1,25 +1,45 @@
 /* ─── Dashboard Layout ───────────────────────────────────────────────────────── */
 
 .dashboard-container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.section {
+  margin-bottom: 2rem;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* ─── Grids ──────────────────────────────────────────────────────────────────── */
 
 .accounts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
+  width: 100%;
+  max-width: 100%;
 }
 
 .actions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* ─── Transactions Table ─────────────────────────────────────────────────────── */
@@ -123,10 +143,15 @@
 
 /* ─── Responsive ─────────────────────────────────────────────────────────────── */
 
+@media (max-width: 1024px) {
+  .grid-container { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 768px) {
   .dashboard-container { padding: 1rem; }
   .accounts-grid { grid-template-columns: 1fr; gap: 1rem; }
   .actions-grid  { grid-template-columns: 1fr 1fr; }
+  .grid-container { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 480px) {
