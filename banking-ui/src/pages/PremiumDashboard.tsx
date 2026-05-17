@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccounts } from '../hooks/useAccounts';
 import { useAuth } from '../hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
+import { accountService } from '../services/accountService';
 import { 
   AreaChart, 
   Area, 
@@ -37,14 +39,6 @@ const spendingTrendsData = [
   { category: 'Others', amount: 3500, color: '#EC4899' },
 ];
 
-const recentTransactionsData = [
-  { id: 1, description: 'Salary Deposit', amount: 55000, type: 'credit', date: '2024-01-15', status: 'completed' },
-  { id: 2, description: 'Rent Payment', amount: -15000, type: 'debit', date: '2024-01-14', status: 'completed' },
-  { id: 3, description: 'Grocery Shopping', amount: -3500, type: 'debit', date: '2024-01-13', status: 'completed' },
-  { id: 4, description: 'Freelance Payment', amount: 12000, type: 'credit', date: '2024-01-12', status: 'completed' },
-  { id: 5, description: 'Electricity Bill', amount: -2500, type: 'debit', date: '2024-01-11', status: 'pending' },
-];
-
 // Animation variants
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -64,6 +58,22 @@ export const PremiumDashboard = () => {
   const { user } = useAuth();
   const { accounts, accountsLoading } = useAccounts();
   const [selectedPeriod, setSelectedPeriod] = useState('6M');
+
+  // Fetch real transactions
+  const { data: recentTransactionsResponse } = useQuery({
+    queryKey: ['recent-transactions'],
+    queryFn: () => accountService.getRecentTransactions(5),
+    enabled: accounts.length > 0,
+  });
+
+  const recentTransactionsData = (recentTransactionsResponse?.items || []).map((txn) => ({
+    id: txn.id,
+    description: txn.description || 'Transaction',
+    amount: txn.amount,
+    type: txn.isCredit ? 'credit' : 'debit',
+    date: txn.createdAt,
+    status: txn.status.toLowerCase(),
+  }));
 
   // Calculate totals
   const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);

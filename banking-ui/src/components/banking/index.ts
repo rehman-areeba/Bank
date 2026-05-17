@@ -4,4 +4,6 @@ export { DepositModal } from './DepositModal';
 export { WithdrawModal } from './WithdrawModal';
 export { IncomeExpenseChart } from './IncomeExpenseChart';
 export { BalanceTrendChart } from './BalanceTrendChart';
+export { SpendingCategoriesChart } from './SpendingCategoriesChart';
+export { AccountGrowthChart } from './AccountGrowthChart';
 export { TransactionTable } from './TransactionTable';

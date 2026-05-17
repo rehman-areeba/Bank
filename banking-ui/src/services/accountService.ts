@@ -108,6 +108,9 @@ export const accountService = {
         params: {
           pageNumber: params.page ?? 1,
           pageSize: params.pageSize ?? 20,
+          transactionType: params.transactionType || undefined,
+          startDate: params.startDate || undefined,
+          endDate: params.endDate || undefined,
         },
       }
     );
