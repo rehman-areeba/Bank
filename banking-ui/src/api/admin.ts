@@ -1,24 +1,50 @@
 import axiosClient from './axiosClient';
 
-export const getAuditLogsByUserApi = async (userId: string, page = 1, pageSize = 50) => {
-  const { data } = await axiosClient.get(`/api/admin/audit-logs/${userId}?pageNumber=${page}&pageSize=${pageSize}`);
-  return data;
+export interface AuditLog {
+  id: number;
+  userId: number;
+  action: string;
+  details: string;
+  timestamp: string;
+  ipAddress: string;
+}
+
+export interface FailedLogin {
+  id: number;
+  email: string;
+  ipAddress: string;
+  attemptTime: string;
+  reason: string;
+}
+
+export interface AccountFreezeRequest {
+  accountId: number;
+  freeze: boolean;
+  reason?: string;
+}
+
+// Get audit logs (Admin only)
+export const getAuditLogsApi = async (): Promise<AuditLog[]> => {
+  const response = await axiosClient.get('/api/admin/audit-logs');
+  return response.data;
 };
 
-export const getFailedLoginsApi = async (hours = 24) => {
-  const { data } = await axiosClient.get(`/api/admin/failed-logins?hours=${hours}`);
-  return data;
+// Get audit logs for specific user (Admin only)
+export const getUserAuditLogsApi = async (userId: number): Promise<AuditLog[]> => {
+  const response = await axiosClient.get(`/api/admin/audit-logs/${userId}`);
+  return response.data;
 };
 
-export const freezeAccountApi = async (accountId: string, unfreeze = false, reason?: string) => {
-  const { data } = await axiosClient.put(`/api/admin/accounts/${accountId}/freeze`, {
-    unfreeze,
-    reason,
+// Get failed login attempts (Admin only)
+export const getFailedLoginsApi = async (): Promise<FailedLogin[]> => {
+  const response = await axiosClient.get('/api/admin/failed-logins');
+  return response.data;
+};
+
+// Freeze or unfreeze account (Admin only)
+export const freezeAccountApi = async (freezeData: AccountFreezeRequest): Promise<void> => {
+  await axiosClient.put(`/api/admin/accounts/${freezeData.accountId}/freeze`, {
+    freeze: freezeData.freeze,
+    reason: freezeData.reason,
   });
-  return data;
-};
-
-export const getAllAccountsApi = async () => {
-  const { data } = await axiosClient.get('/api/accounts');
-  return data;
 };

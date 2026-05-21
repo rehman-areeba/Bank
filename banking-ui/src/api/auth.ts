@@ -1,8 +1,51 @@
-// Re-export from canonical location — use src/services/authService.ts directly
-export { authService as default, authService } from '../services/authService';
-export const loginApi = (email: string, password: string) =>
-  import('../services/authService').then((m) => m.authService.login({ email, password }));
-export const registerApi = (dto: any) =>
-  import('../services/authService').then((m) => m.authService.register(dto));
-export const getMeApi = () =>
-  import('../services/authService').then((m) => m.authService.getMe());
+import axiosClient from './axiosClient';
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
+}
+
+export interface UserProfile {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  createdAt: string;
+}
+
+// Login API
+export const loginApi = async (credentials: LoginRequest): Promise<AuthResponse> => {
+  const response = await axiosClient.post('/api/auth/login', credentials);
+  return response.data;
+};
+
+// Register API
+export const registerApi = async (userData: RegisterRequest): Promise<AuthResponse> => {
+  const response = await axiosClient.post('/api/auth/register', userData);
+  return response.data;
+};
+
+// Get current user profile
+export const getMeApi = async (): Promise<UserProfile> => {
+  const response = await axiosClient.get('/api/auth/me');
+  return response.data;
+};
