@@ -54,8 +54,8 @@ export const getAccountBalanceApi = async (accountId: number): Promise<{ balance
 };
 
 // Create new account
-export const createAccountApi = async (accountData: CreateAccountRequest): Promise<Account> => {
-  const response = await axiosClient.post('/api/accounts', accountData);
+export const createAccountApi = async (accountData: { type: string }): Promise<Account> => {
+  const response = await axiosClient.post('/api/accounts', { accountType: accountData.type });
   return response.data;
 };
 

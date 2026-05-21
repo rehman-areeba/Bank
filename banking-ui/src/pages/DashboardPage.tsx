@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
 import { getAccountsApi, getRecentTransactionsApi } from '../api/accounts';
 import BalanceCard from '../components/ui/BalanceCard';
-import { DashboardSkeleton, TransactionSkeleton } from '../components/ui/LoadingSkeletons';
+import { CreateAccountModal } from '../components/banking/CreateAccountModal';
+import { DashboardSkeleton } from '../components/skeletons';
 import ErrorState from '../components/ui/ErrorState';
+import { MobileNav } from '../components/layout/MobileNav';
 
 interface Transaction {
   id: number;
@@ -26,7 +29,10 @@ interface Account {
 }
 
 const DashboardPage: React.FC = () => {
+  const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const [showCreateAccount, setShowCreateAccount] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Fetch accounts
   const {
@@ -54,7 +60,7 @@ const DashboardPage: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    window.location.hash = 'login';
+    navigate('/login');
   };
 
   const handleRetry = () => {
@@ -136,26 +142,27 @@ const DashboardPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
-        <div className="bg-white shadow">
+        <header className="bg-white shadow" role="banner">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-6">
               <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
               <button
                 onClick={handleLogout}
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                aria-label="Logout from your account"
               >
                 Logout
               </button>
             </div>
           </div>
-        </div>
+        </header>
 
         {/* Loading Content */}
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <main id="main-content" className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8" role="main">
           <div className="px-4 py-6 sm:px-0">
             <DashboardSkeleton />
           </div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -165,22 +172,23 @@ const DashboardPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
-        <div className="bg-white shadow">
+        <header className="bg-white shadow" role="banner">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-6">
               <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
               <button
                 onClick={handleLogout}
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                aria-label="Logout from your account"
               >
                 Logout
               </button>
             </div>
           </div>
-        </div>
+        </header>
 
         {/* Error Content */}
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <main id="main-content" className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8" role="main">
           <div className="px-4 py-6 sm:px-0">
             <ErrorState
               title="Failed to load dashboard"
@@ -188,7 +196,7 @@ const DashboardPage: React.FC = () => {
               onRetry={handleRetry}
             />
           </div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -196,41 +204,62 @@ const DashboardPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow">
+      <header className="bg-white shadow" role="banner">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-sm text-gray-600">Welcome back, {user?.name}</p>
+            <div className="flex items-center space-x-4">
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setMobileNavOpen(true)}
+                className="lg:hidden text-gray-600 hover:text-gray-900"
+                aria-label="Open navigation menu"
+                aria-expanded={mobileNavOpen}
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+                <p className="text-sm text-gray-600 hide-mobile">Welcome back, {user?.name}</p>
+              </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-              Logout
-            </button>
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-gray-700 hide-mobile" aria-label={`Logged in as ${user?.name}`}>{user?.name}</span>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                aria-label="Logout from your account"
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main id="main-content" className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8" role="main">
         <div className="px-4 py-6 sm:px-0 space-y-8">
           
           {/* Total Balance Summary */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
-            <h2 className="text-lg font-medium mb-2">Total Balance</h2>
-            <p className="text-3xl font-bold">{formatBalance(getTotalBalance())}</p>
+          <section aria-labelledby="total-balance-heading" className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
+            <h2 id="total-balance-heading" className="text-lg font-medium mb-2">Total Balance</h2>
+            <p className="text-3xl font-bold" aria-label={`Total balance: ${formatBalance(getTotalBalance())}`}>{formatBalance(getTotalBalance())}</p>
             <p className="text-blue-100 text-sm mt-2">
               Across {accounts?.filter((acc: Account) => acc.isActive).length || 0} active accounts
             </p>
-          </div>
+          </section>
 
           {/* Account Cards */}
-          <div>
+          <section aria-labelledby="accounts-heading">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Your Accounts</h2>
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+              <h2 id="accounts-heading" className="text-xl font-semibold text-gray-900">Your Accounts</h2>
+              <button 
+                onClick={() => setShowCreateAccount(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                aria-label="Create new account"
+              >
                 + New Account
               </button>
             </div>
@@ -258,20 +287,24 @@ const DashboardPage: React.FC = () => {
                 </svg>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No accounts found</h3>
                 <p className="text-gray-500 mb-4">Get started by creating your first account.</p>
-                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                <button 
+                  onClick={() => setShowCreateAccount(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                >
                   Create Account
                 </button>
               </div>
             )}
-          </div>
+          </section>
 
           {/* Quick Actions */}
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <button 
-                onClick={() => window.location.hash = 'transfer'}
-                className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow text-left"
+          <section aria-labelledby="quick-actions-heading">
+            <h2 id="quick-actions-heading" className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+            <nav aria-label="Quick actions" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Link 
+                to="/transfer"
+                className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow text-left block"
+                aria-label="Transfer money between accounts"
               >
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -284,11 +317,12 @@ const DashboardPage: React.FC = () => {
                     <p className="text-sm text-gray-500">Send money between accounts</p>
                   </div>
                 </div>
-              </button>
+              </Link>
 
-              <button 
-                onClick={() => window.location.hash = 'transactions'}
-                className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow text-left"
+              <Link 
+                to="/transactions"
+                className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow text-left block"
+                aria-label="View transaction history"
               >
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
@@ -301,9 +335,13 @@ const DashboardPage: React.FC = () => {
                     <p className="text-sm text-gray-500">Check transaction history</p>
                   </div>
                 </div>
-              </button>
+              </Link>
 
-              <button className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow text-left">
+              <button 
+                onClick={() => setShowCreateAccount(true)}
+                className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow text-left"
+                aria-label="Open a new account"
+              >
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
                     <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -316,15 +354,15 @@ const DashboardPage: React.FC = () => {
                   </div>
                 </div>
               </button>
-            </div>
-          </div>
+            </nav>
+          </section>
 
           {/* Recent Transactions */}
-          <div className="bg-white rounded-lg shadow-md">
+          <section aria-labelledby="recent-transactions-heading" className="bg-white rounded-lg shadow-md">
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900">Recent Transactions</h2>
-                <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                <h2 id="recent-transactions-heading" className="text-xl font-semibold text-gray-900">Recent Transactions</h2>
+                <button className="text-blue-600 hover:text-blue-700 text-sm font-medium" aria-label="View all transactions">
                   View All
                 </button>
               </div>
@@ -334,7 +372,19 @@ const DashboardPage: React.FC = () => {
               {transactionsLoading ? (
                 <div className="space-y-4">
                   {[...Array(5)].map((_, index) => (
-                    <TransactionSkeleton key={index} />
+                    <div key={index} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+                      <div className="flex items-center space-x-4 flex-1">
+                        <div className="skeleton skeleton-circle w-10 h-10"></div>
+                        <div className="flex-1">
+                          <div className="skeleton h-4 w-48 mb-2"></div>
+                          <div className="skeleton h-3 w-32"></div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="skeleton h-5 w-24 mb-2"></div>
+                        <div className="skeleton h-5 w-20"></div>
+                      </div>
+                    </div>
                   ))}
                 </div>
               ) : transactionsError ? (
@@ -350,9 +400,9 @@ const DashboardPage: React.FC = () => {
               ) : recentTransactions && recentTransactions.length > 0 ? (
                 <div className="space-y-4">
                   {recentTransactions.slice(0, 5).map((transaction: Transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+                    <div key={transaction.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0" role="listitem">
                       <div className="flex items-center space-x-3">
-                        {getTransactionIcon(transaction.type)}
+                        <div aria-hidden="true">{getTransactionIcon(transaction.type)}</div>
                         <div>
                           <p className="font-medium text-gray-900">{transaction.description}</p>
                           <p className="text-sm text-gray-500">
@@ -363,10 +413,12 @@ const DashboardPage: React.FC = () => {
                       <div className="text-right">
                         <p className={`font-semibold ${
                           transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
+                        }`} aria-label={`${transaction.amount > 0 ? 'Credit' : 'Debit'} of ${formatBalance(Math.abs(transaction.amount))}`}>
                           {transaction.amount > 0 ? '+' : ''}{formatBalance(Math.abs(transaction.amount))}
                         </p>
-                        {getStatusBadge(transaction.status)}
+                        <div aria-label={`Status: ${transaction.status}`}>
+                          {getStatusBadge(transaction.status)}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -380,9 +432,18 @@ const DashboardPage: React.FC = () => {
                 </div>
               )}
             </div>
-          </div>
+          </section>
         </div>
-      </div>
+      </main>
+
+      {/* Create Account Modal */}
+      <CreateAccountModal
+        isOpen={showCreateAccount}
+        onClose={() => setShowCreateAccount(false)}
+      />
+
+      {/* Mobile Navigation */}
+      <MobileNav isOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
     </div>
   );
 };

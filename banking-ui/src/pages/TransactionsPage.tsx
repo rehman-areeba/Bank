@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { Link, useNavigate } from 'react-router-dom';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
-import { getAccountsApi, getTransactionHistoryApi } from '../api/accounts';
+import { getTransactionsApi } from '../api/transactions';
+import { MobileNav } from '../components/layout/MobileNav';
+import { TableSkeleton } from '../components/skeletons';
 
 interface Transaction {
   id: number;
@@ -13,35 +16,297 @@ interface Transaction {
   accountId: number;
 }
 
-interface Account {
-  id: number;
-  accountNumber: string;
-  accountType: string;
-  balance: number;
-  isActive: boolean;
-}
-
 interface TransactionFilters {
-  accountId: number;
+  accountId: string;
   type: string;
-  dateFrom: string;
-  dateTo: string;
+  startDate: string;
+  endDate: string;
 }
 
 const TransactionsPage: React.FC = () => {
+  const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [filters, setFilters] = useState<TransactionFilters>({
-    accountId: 0,
+    accountId: '',
     type: '',
-    dateFrom: '',
-    dateTo: '',
+    startDate: '',
+    endDate: ''
   });
 
-  // Fetch user's accounts for filter dropdown
-  const { data: accounts } = useQuery({
-    queryKey: ['accounts'],
-    queryFn: getAccountsApi,
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error
+  } = useInfiniteQuery({
+    queryKey: ['transactions', filters],
+    queryFn: ({ pageParam = 1 }) => getTransactionsApi({ 
+      page: pageParam, 
+      pageSize: 20,
+      ...filters 
+    }),
+    getNextPageParam: (lastPage, pages) => {
+      return lastPage.hasMore ? pages.length + 1 : undefined;
+    },
+    staleTime: 2 * 60 * 1000
   });
 
-  // Infinite query for transactions
-  const {\n    data: transactionsData,\n    fetchNextPage,\n    hasNextPage,\n    isFetchingNextPage,\n    isLoading,\n    error,\n    refetch,\n  } = useInfiniteQuery({\n    queryKey: ['transactions', filters],\n    queryFn: ({ pageParam = 1 }) => {\n      if (!filters.accountId) {\n        return Promise.resolve({ transactions: [], totalCount: 0, page: 1, pageSize: 20 });\n      }\n      return getTransactionHistoryApi(\n        filters.accountId,\n        pageParam,\n        20,\n        filters.dateFrom || undefined,\n        filters.dateTo || undefined\n      );\n    },\n    getNextPageParam: (lastPage) => {\n      const totalPages = Math.ceil(lastPage.totalCount / lastPage.pageSize);\n      return lastPage.page < totalPages ? lastPage.page + 1 : undefined;\n    },\n    enabled: !!filters.accountId,\n  });\n\n  const handleLogout = () => {\n    logout();\n    window.location.hash = 'login';\n  };\n\n  const handleFilterChange = (field: keyof TransactionFilters, value: string | number) => {\n    setFilters(prev => ({ ...prev, [field]: value }));\n  };\n\n  const clearFilters = () => {\n    setFilters({\n      accountId: accounts?.[0]?.id || 0,\n      type: '',\n      dateFrom: '',\n      dateTo: '',\n    });\n  };\n\n  const formatBalance = (amount: number): string => {\n    return new Intl.NumberFormat('en-PK', {\n      style: 'currency',\n      currency: 'PKR',\n      minimumFractionDigits: 2,\n      maximumFractionDigits: 2,\n    }).format(amount);\n  };\n\n  const getStatusBadge = (status: string): JSX.Element => {\n    const statusColors = {\n      completed: 'bg-green-100 text-green-800 border-green-200',\n      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',\n      failed: 'bg-red-100 text-red-800 border-red-200',\n    };\n    \n    const colorClass = statusColors[status.toLowerCase() as keyof typeof statusColors] || 'bg-gray-100 text-gray-800 border-gray-200';\n    \n    return (\n      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${colorClass}`}>\n        {status}\n      </span>\n    );\n  };\n\n  const getTransactionIcon = (type: string): JSX.Element => {\n    switch (type.toLowerCase()) {\n      case 'deposit':\n        return (\n          <div className=\"w-8 h-8 bg-green-100 rounded-full flex items-center justify-center\">\n            <svg className=\"w-4 h-4 text-green-600\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\">\n              <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M12 6v6m0 0v6m0-6h6m-6 0H6\" />\n            </svg>\n          </div>\n        );\n      case 'withdrawal':\n        return (\n          <div className=\"w-8 h-8 bg-red-100 rounded-full flex items-center justify-center\">\n            <svg className=\"w-4 h-4 text-red-600\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\">\n              <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M20 12H4\" />\n            </svg>\n          </div>\n        );\n      case 'transfer':\n        return (\n          <div className=\"w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center\">\n            <svg className=\"w-4 h-4 text-blue-600\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\">\n              <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4\" />\n            </svg>\n          </div>\n        );\n      default:\n        return (\n          <div className=\"w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center\">\n            <svg className=\"w-4 h-4 text-gray-600\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\">\n              <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z\" />\n            </svg>\n          </div>\n        );\n    }\n  };\n\n  // Get all transactions from all pages\n  const allTransactions = transactionsData?.pages.flatMap(page => page.transactions) || [];\n  \n  // Filter transactions by type if selected\n  const filteredTransactions = filters.type \n    ? allTransactions.filter(transaction => transaction.type.toLowerCase() === filters.type.toLowerCase())\n    : allTransactions;\n\n  // Set default account if not selected\n  React.useEffect(() => {\n    if (accounts && accounts.length > 0 && !filters.accountId) {\n      setFilters(prev => ({ ...prev, accountId: accounts[0].id }));\n    }\n  }, [accounts, filters.accountId]);\n\n  return (\n    <div className=\"min-h-screen bg-gray-50\">\n      {/* Header */}\n      <div className=\"bg-white shadow\">\n        <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\">\n          <div className=\"flex justify-between items-center py-6\">\n            <div className=\"flex items-center space-x-4\">\n              <button\n                onClick={() => window.location.hash = 'dashboard'}\n                className=\"text-gray-500 hover:text-gray-700\"\n              >\n                <svg className=\"h-6 w-6\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\">\n                  <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M15 19l-7-7 7-7\" />\n                </svg>\n              </button>\n              <div>\n                <h1 className=\"text-2xl font-bold text-gray-900\">Transaction History</h1>\n                <p className=\"text-sm text-gray-600\">View your account transactions</p>\n              </div>\n            </div>\n            <div className=\"flex items-center space-x-4\">\n              <span className=\"text-sm text-gray-700\">\n                {user?.name}\n              </span>\n              <button\n                onClick={handleLogout}\n                className=\"bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors\"\n              >\n                Logout\n              </button>\n            </div>\n          </div>\n        </div>\n      </div>\n\n      {/* Main Content */}\n      <div className=\"max-w-7xl mx-auto py-6 sm:px-6 lg:px-8\">\n        <div className=\"px-4 py-6 sm:px-0 space-y-6\">\n          \n          {/* Filters */}\n          <div className=\"bg-white rounded-lg shadow-md p-6\">\n            <h2 className=\"text-lg font-semibold text-gray-900 mb-4\">Filter Transactions</h2>\n            <div className=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4\">\n              {/* Account Filter */}\n              <div>\n                <label className=\"block text-sm font-medium text-gray-700 mb-2\">Account</label>\n                <select\n                  value={filters.accountId}\n                  onChange={(e) => handleFilterChange('accountId', parseInt(e.target.value))}\n                  className=\"w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500\"\n                >\n                  <option value={0}>Select account</option>\n                  {accounts?.map((account: Account) => (\n                    <option key={account.id} value={account.id}>\n                      {account.accountType} - ****{account.accountNumber.slice(-4)}\n                    </option>\n                  ))}\n                </select>\n              </div>\n\n              {/* Transaction Type Filter */}\n              <div>\n                <label className=\"block text-sm font-medium text-gray-700 mb-2\">Type</label>\n                <select\n                  value={filters.type}\n                  onChange={(e) => handleFilterChange('type', e.target.value)}\n                  className=\"w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500\"\n                >\n                  <option value=\"\">All Types</option>\n                  <option value=\"transfer\">Transfer</option>\n                  <option value=\"deposit\">Deposit</option>\n                  <option value=\"withdrawal\">Withdrawal</option>\n                </select>\n              </div>\n\n              {/* Date From */}\n              <div>\n                <label className=\"block text-sm font-medium text-gray-700 mb-2\">From Date</label>\n                <input\n                  type=\"date\"\n                  value={filters.dateFrom}\n                  onChange={(e) => handleFilterChange('dateFrom', e.target.value)}\n                  className=\"w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500\"\n                />\n              </div>\n\n              {/* Date To */}\n              <div>\n                <label className=\"block text-sm font-medium text-gray-700 mb-2\">To Date</label>\n                <input\n                  type=\"date\"\n                  value={filters.dateTo}\n                  onChange={(e) => handleFilterChange('dateTo', e.target.value)}\n                  className=\"w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500\"\n                />\n              </div>\n            </div>\n            \n            <div className=\"mt-4 flex justify-end\">\n              <button\n                onClick={clearFilters}\n                className=\"px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors\"\n              >\n                Clear Filters\n              </button>\n            </div>\n          </div>\n\n          {/* Transactions Table */}\n          <div className=\"bg-white rounded-lg shadow-md overflow-hidden\">\n            <div className=\"px-6 py-4 border-b border-gray-200\">\n              <h3 className=\"text-lg font-semibold text-gray-900\">Transactions</h3>\n              {filteredTransactions.length > 0 && (\n                <p className=\"text-sm text-gray-600 mt-1\">\n                  Showing {filteredTransactions.length} transactions\n                </p>\n              )}\n            </div>\n\n            {isLoading ? (\n              <div className=\"p-8 text-center\">\n                <div className=\"animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto\"></div>\n                <p className=\"mt-2 text-gray-500\">Loading transactions...</p>\n              </div>\n            ) : error ? (\n              <div className=\"p-8 text-center\">\n                <p className=\"text-red-600 mb-4\">Failed to load transactions</p>\n                <button\n                  onClick={() => refetch()}\n                  className=\"text-blue-600 hover:text-blue-700 font-medium\"\n                >\n                  Try Again\n                </button>\n              </div>\n            ) : filteredTransactions.length > 0 ? (\n              <>\n                <div className=\"overflow-x-auto\">\n                  <table className=\"min-w-full\">\n                    <thead className=\"bg-gray-50\">\n                      <tr>\n                        <th className=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\">\n                          Date\n                        </th>\n                        <th className=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\">\n                          Description\n                        </th>\n                        <th className=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\">\n                          Amount\n                        </th>\n                        <th className=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\">\n                          Status\n                        </th>\n                        <th className=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\">\n                          Transaction ID\n                        </th>\n                      </tr>\n                    </thead>\n                    <tbody className=\"bg-white divide-y divide-gray-200\">\n                      {filteredTransactions.map((transaction: Transaction) => (\n                        <tr key={transaction.id} className=\"hover:bg-gray-50\">\n                          <td className=\"px-6 py-4 whitespace-nowrap\">\n                            <div className=\"flex items-center\">\n                              {getTransactionIcon(transaction.type)}\n                              <div className=\"ml-3\">\n                                <div className=\"text-sm font-medium text-gray-900\">\n                                  {new Date(transaction.createdAt).toLocaleDateString()}\n                                </div>\n                                <div className=\"text-sm text-gray-500\">\n                                  {new Date(transaction.createdAt).toLocaleTimeString()}\n                                </div>\n                              </div>\n                            </div>\n                          </td>\n                          <td className=\"px-6 py-4\">\n                            <div className=\"text-sm font-medium text-gray-900\">{transaction.description}</div>\n                            <div className=\"text-sm text-gray-500 capitalize\">{transaction.type}</div>\n                          </td>\n                          <td className=\"px-6 py-4 whitespace-nowrap\">\n                            <span className={`text-sm font-semibold ${\n                              transaction.amount > 0 ? 'text-green-600' : 'text-red-600'\n                            }`}>\n                              {transaction.amount > 0 ? '+' : ''}{formatBalance(Math.abs(transaction.amount))}\n                            </span>\n                          </td>\n                          <td className=\"px-6 py-4 whitespace-nowrap\">\n                            {getStatusBadge(transaction.status)}\n                          </td>\n                          <td className=\"px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono\">\n                            #{transaction.id.toString().padStart(8, '0')}\n                          </td>\n                        </tr>\n                      ))}\n                    </tbody>\n                  </table>\n                </div>\n\n                {/* Load More Button */}\n                {hasNextPage && (\n                  <div className=\"px-6 py-4 border-t border-gray-200 text-center\">\n                    <button\n                      onClick={() => fetchNextPage()}\n                      disabled={isFetchingNextPage}\n                      className=\"inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50\"\n                    >\n                      {isFetchingNextPage ? (\n                        <>\n                          <svg className=\"animate-spin -ml-1 mr-3 h-4 w-4 text-gray-500\" xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\">\n                            <circle className=\"opacity-25\" cx=\"12\" cy=\"12\" r=\"10\" stroke=\"currentColor\" strokeWidth=\"4\"></circle>\n                            <path className=\"opacity-75\" fill=\"currentColor\" d=\"M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z\"></path>\n                          </svg>\n                          Loading...\n                        </>\n                      ) : (\n                        'Load More Transactions'\n                      )}\n                    </button>\n                  </div>\n                )}\n              </>\n            ) : (\n              <div className=\"p-8 text-center\">\n                <svg className=\"mx-auto h-12 w-12 text-gray-400 mb-4\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\">\n                  <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z\" />\n                </svg>\n                <h3 className=\"text-lg font-medium text-gray-900 mb-2\">No transactions found</h3>\n                <p className=\"text-gray-500\">No transactions match your current filters.</p>\n              </div>\n            )}\n          </div>\n        </div>\n      </div>\n    </div>\n  );\n};\n\nexport default TransactionsPage;
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const handleFilterChange = (field: keyof TransactionFilters, value: string) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
+  };
+
+  const formatBalance = (amount: number): string => {
+    return new Intl.NumberFormat('en-PK', {
+      style: 'currency',
+      currency: 'PKR',
+      minimumFractionDigits: 2
+    }).format(Math.abs(amount));
+  };
+
+  const getStatusBadge = (status: string): JSX.Element => {
+    const statusColors = {
+      completed: 'bg-green-100 text-green-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      failed: 'bg-red-100 text-red-800',
+    };
+    
+    const colorClass = statusColors[status.toLowerCase() as keyof typeof statusColors] || 'bg-gray-100 text-gray-800';
+    
+    return (
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>
+        {status}
+      </span>
+    );
+  };
+
+  const getTransactionIcon = (type: string): JSX.Element => {
+    switch (type.toLowerCase()) {
+      case 'deposit':
+        return (
+          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+            <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </div>
+        );
+      case 'withdrawal':
+        return (
+          <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+            <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+            </svg>
+          </div>
+        );
+      case 'transfer':
+        return (
+          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+            <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+          </div>
+        );
+      default:
+        return (
+          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+            <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+        );
+    }
+  };
+
+  const allTransactions = data?.pages.flatMap(page => page.transactions) || [];
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div className="flex items-center space-x-4">
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setMobileNavOpen(true)}
+                className="lg:hidden text-gray-600 hover:text-gray-900"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <Link to="/dashboard" className="text-gray-500 hover:text-gray-700 desktop-only">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </Link>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Transaction History</h1>
+                <p className="text-sm text-gray-600 hide-mobile">View all your transactions</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-gray-700 hide-mobile">{user?.name}</span>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0">
+          
+          {/* Filters */}
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Filter Transactions</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Transaction Type
+                </label>
+                <select
+                  value={filters.type}
+                  onChange={(e) => handleFilterChange('type', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">All Types</option>
+                  <option value="Transfer">Transfer</option>
+                  <option value="Deposit">Deposit</option>
+                  <option value="Withdrawal">Withdrawal</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  onClick={() => setFilters({ accountId: '', type: '', startDate: '', endDate: '' })}
+                  className="w-full bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Transactions List */}
+          <div className="bg-white rounded-lg shadow-md">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Transactions ({allTransactions.length})
+              </h2>
+            </div>
+
+            {isLoading ? (
+              <div className="p-6">
+                <TableSkeleton rows={10} showHeader={false} />
+              </div>
+            ) : error ? (
+              <div className="p-6 text-center">
+                <p className="text-red-600 mb-4">Failed to load transactions</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Try Again
+                </button>
+              </div>
+            ) : allTransactions.length === 0 ? (
+              <div className="p-6 text-center">
+                <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p className="text-gray-500">No transactions found</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {allTransactions.map((transaction: Transaction) => (
+                  <div key={transaction.id} className="p-4 sm:p-6 hover:bg-gray-50">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="flex items-center space-x-4">
+                        {getTransactionIcon(transaction.type)}
+                        <div>
+                          <p className="font-medium text-gray-900">{transaction.description}</p>
+                          <div className="flex flex-wrap items-center gap-x-2 text-sm text-gray-500">
+                            <span>{transaction.type}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span>{new Date(transaction.createdAt).toLocaleDateString()}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span className="hidden sm:inline">ID: {transaction.id}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2">
+                        <p className={`font-semibold text-lg ${
+                          transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {transaction.amount > 0 ? '+' : '-'}{formatBalance(transaction.amount)}
+                        </p>
+                        <div>
+                          {getStatusBadge(transaction.status)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Load More Button */}
+            {hasNextPage && (
+              <div className="p-6 border-t border-gray-200 text-center">
+                <button
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isFetchingNextPage ? 'Loading...' : 'Load More'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Navigation */}
+      <MobileNav isOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+    </div>
+  );
+};
+
+export default TransactionsPage;

@@ -1,1 +1,172 @@
-import React, { useState } from 'react';\nimport { useMutation } from '@tanstack/react-query';\nimport { useAuthStore } from '../store/authStore';\nimport { loginApi, LoginRequest } from '../api/auth';\n\ninterface LoginForm {\n  email: string;\n  password: string;\n}\n\ninterface LoginError {\n  message: string;\n}\n\nconst Login: React.FC = () => {\n  const [form, setForm] = useState<LoginForm>({ email: '', password: '' });\n  const [errors, setErrors] = useState<Partial<LoginForm>>({});\n  const login = useAuthStore((state) => state.login);\n\n  const loginMutation = useMutation({\n    mutationFn: (credentials: LoginRequest) => loginApi(credentials),\n    onSuccess: (data) => {\n      login(data.token, data.user);\n      window.location.href = '/dashboard';\n    },\n    onError: (error: any) => {\n      console.error('Login failed:', error);\n    },\n  });\n\n  const validateForm = (): boolean => {\n    const newErrors: Partial<LoginForm> = {};\n\n    // Email validation\n    if (!form.email) {\n      newErrors.email = 'Email is required';\n    } else if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(form.email)) {\n      newErrors.email = 'Please enter a valid email address';\n    }\n\n    // Password validation\n    if (!form.password) {\n      newErrors.password = 'Password is required';\n    } else if (form.password.length < 8) {\n      newErrors.password = 'Password must be at least 8 characters';\n    }\n\n    setErrors(newErrors);\n    return Object.keys(newErrors).length === 0;\n  };\n\n  const handleSubmit = (e: React.FormEvent) => {\n    e.preventDefault();\n    \n    if (!validateForm()) {\n      return;\n    }\n\n    loginMutation.mutate(form);\n  };\n\n  const handleInputChange = (field: keyof LoginForm, value: string) => {\n    setForm(prev => ({ ...prev, [field]: value }));\n    // Clear error when user starts typing\n    if (errors[field]) {\n      setErrors(prev => ({ ...prev, [field]: undefined }));\n    }\n  };\n\n  const getErrorMessage = (): string => {\n    if (loginMutation.error) {\n      const error = loginMutation.error as any;\n      return error.response?.data?.message || error.message || 'Login failed. Please try again.';\n    }\n    return '';\n  };\n\n  return (\n    <div className=\"min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8\">\n      <div className=\"max-w-md w-full space-y-8\">\n        {/* Header */}\n        <div className=\"text-center\">\n          <h2 className=\"text-3xl font-bold text-gray-900 mb-2\">\n            Welcome Back\n          </h2>\n          <p className=\"text-gray-600\">\n            Sign in to your banking account\n          </p>\n        </div>\n\n        {/* Login Form */}\n        <div className=\"bg-white rounded-lg shadow-md p-8\">\n          <form onSubmit={handleSubmit} className=\"space-y-6\">\n            {/* API Error Message */}\n            {loginMutation.error && (\n              <div className=\"bg-red-50 border border-red-200 rounded-md p-4\">\n                <div className=\"flex\">\n                  <div className=\"flex-shrink-0\">\n                    <svg className=\"h-5 w-5 text-red-400\" viewBox=\"0 0 20 20\" fill=\"currentColor\">\n                      <path fillRule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z\" clipRule=\"evenodd\" />\n                    </svg>\n                  </div>\n                  <div className=\"ml-3\">\n                    <p className=\"text-sm text-red-800\">\n                      {getErrorMessage()}\n                    </p>\n                  </div>\n                </div>\n              </div>\n            )}\n\n            {/* Email Field */}\n            <div>\n              <label htmlFor=\"email\" className=\"block text-sm font-medium text-gray-700 mb-2\">\n                Email Address\n              </label>\n              <input\n                id=\"email\"\n                type=\"email\"\n                value={form.email}\n                onChange={(e) => handleInputChange('email', e.target.value)}\n                className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${\n                  errors.email ? 'border-red-300' : 'border-gray-300'\n                }`}\n                placeholder=\"Enter your email\"\n                disabled={loginMutation.isPending}\n              />\n              {errors.email && (\n                <p className=\"mt-1 text-sm text-red-600\">{errors.email}</p>\n              )}\n            </div>\n\n            {/* Password Field */}\n            <div>\n              <label htmlFor=\"password\" className=\"block text-sm font-medium text-gray-700 mb-2\">\n                Password\n              </label>\n              <input\n                id=\"password\"\n                type=\"password\"\n                value={form.password}\n                onChange={(e) => handleInputChange('password', e.target.value)}\n                className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${\n                  errors.password ? 'border-red-300' : 'border-gray-300'\n                }`}\n                placeholder=\"Enter your password\"\n                disabled={loginMutation.isPending}\n              />\n              {errors.password && (\n                <p className=\"mt-1 text-sm text-red-600\">{errors.password}</p>\n              )}\n            </div>\n\n            {/* Submit Button */}\n            <button\n              type=\"submit\"\n              disabled={loginMutation.isPending}\n              className=\"w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed\"\n            >\n              {loginMutation.isPending ? (\n                <div className=\"flex items-center\">\n                  <svg className=\"animate-spin -ml-1 mr-3 h-5 w-5 text-white\" xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\">\n                    <circle className=\"opacity-25\" cx=\"12\" cy=\"12\" r=\"10\" stroke=\"currentColor\" strokeWidth=\"4\"></circle>\n                    <path className=\"opacity-75\" fill=\"currentColor\" d=\"M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z\"></path>\n                  </svg>\n                  Signing in...\n                </div>\n              ) : (\n                'Sign In'\n              )}\n            </button>\n          </form>\n\n          {/* Register Link */}\n          <div className=\"mt-6 text-center\">\n            <p className=\"text-sm text-gray-600\">\n              Don't have an account?{' '}\n              <a href=\"/register\" className=\"font-medium text-blue-600 hover:text-blue-500\">\n                Create one here\n              </a>\n            </p>\n          </div>\n        </div>\n      </div>\n    </div>\n  );\n};\n\nexport default Login;
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useAuthStore } from '../store/authStore';
+import { loginApi } from '../api/auth';
+import { loginSchema, LoginFormData } from '../validation/schemas';
+import { announceToScreenReader } from '../utils/accessibility';
+
+const Login: React.FC = () => {
+  const navigate = useNavigate();
+  const login = useAuthStore((state) => state.login);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isValid }
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    mode: 'onChange'
+  });
+
+  const loginMutation = useMutation({
+    mutationFn: loginApi,
+    onSuccess: (data) => {
+      login(data.token, data.user);
+      announceToScreenReader('Login successful. Redirecting to dashboard.', 'polite');
+      navigate('/dashboard');
+    },
+    onError: (error: any) => {
+      console.error('Login failed:', error);
+      announceToScreenReader('Login failed. Please check your credentials.', 'assertive');
+    }
+  });
+
+  const onSubmit = (data: LoginFormData) => {
+    loginMutation.mutate(data);
+  };
+
+  const getErrorMessage = (): string => {
+    if (loginMutation.error) {
+      const error = loginMutation.error as any;
+      return error.response?.data?.message || error.message || 'Login failed. Please try again.';
+    }
+    return '';
+  };
+
+  const isSubmitDisabled = !isValid || loginMutation.isPending;
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        {/* Header */}
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Welcome Back
+          </h1>
+          <p className="text-gray-600">
+            Sign in to your banking account
+          </p>
+        </div>
+
+        {/* Login Form */}
+        <div className="bg-white rounded-lg shadow-md p-8">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" aria-label="Login form">
+            {/* API Error Message */}
+            {loginMutation.error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4" role="alert" aria-live="assertive">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-800">
+                      {getErrorMessage()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Email Field */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <input
+                id="email"
+                type="email"
+                {...register('email')}
+                className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.email ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="Enter your email"
+                disabled={loginMutation.isPending}
+                aria-required="true"
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? 'email-error' : undefined}
+              />
+              {errors.email && (
+                <p id="email-error" className="mt-1 text-sm text-red-600" role="alert">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                {...register('password')}
+                className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.password ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="Enter your password"
+                disabled={loginMutation.isPending}
+                aria-required="true"
+                aria-invalid={!!errors.password}
+                aria-describedby={errors.password ? 'password-error' : undefined}
+              />
+              {errors.password && (
+                <p id="password-error" className="mt-1 text-sm text-red-600" role="alert">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isSubmitDisabled}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label={loginMutation.isPending ? 'Signing in, please wait' : 'Sign in to your account'}
+            >
+              {loginMutation.isPending ? (
+                <div className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Signing in...</span>
+                  <span className="sr-only">Please wait while we sign you in</span>
+                </div>
+              ) : (
+                'Sign In'
+              )}
+            </button>
+          </form>
+
+          {/* Register Link */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{' '}
+              <a href="/register" className="font-medium text-blue-600 hover:text-blue-500">
+                Create one here
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Login;

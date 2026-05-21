@@ -1,5 +1,102 @@
-import React, { useEffect } from 'react';\nimport { QueryClient, QueryClientProvider } from '@tanstack/react-query';\nimport { useAuthStore } from './store/authStore';\nimport Login from './pages/Login';\nimport Register from './pages/Register';\nimport DashboardPage from './pages/DashboardPage';
+import React, { useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from './store/authStore';
+import { PrivateRoute } from './components/auth/PrivateRoute';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import DashboardPage from './pages/DashboardPage';
 import TransferPage from './pages/TransferPage';
-import TransactionsPage from './pages/TransactionsPage';\n\n// Create a client\nconst queryClient = new QueryClient({\n  defaultOptions: {\n    queries: {\n      retry: 1,\n      refetchOnWindowFocus: false,\n    },\n  },\n});\n\ntype Page = 'login' | 'register' | 'dashboard' | 'transfer' | 'transactions';\n\nfunction AppContent() {\n  const { isAuthenticated, initialize } = useAuthStore();\n  const [currentPage, setCurrentPage] = React.useState<Page>('login');\n\n  useEffect(() => {\n    // Initialize auth store from localStorage\n    initialize();\n  }, [initialize]);\n\n  useEffect(() => {\n    // Simple routing based on URL hash\n    const handleHashChange = () => {\n      const hash = window.location.hash.slice(1) as Page;\n      if (hash && ['login', 'register', 'dashboard', 'transfer', 'transactions'].includes(hash)) {\n        setCurrentPage(hash);\n      } else if (isAuthenticated) {\n        setCurrentPage('dashboard');\n        window.location.hash = 'dashboard';\n      } else {\n        setCurrentPage('login');\n        window.location.hash = 'login';\n      }\n    };\n\n    window.addEventListener('hashchange', handleHashChange);\n    handleHashChange();\n\n    return () => window.removeEventListener('hashchange', handleHashChange);\n  }, [isAuthenticated]);\n\n  // Redirect to dashboard if authenticated and trying to access auth pages\n  if (isAuthenticated && (currentPage === 'login' || currentPage === 'register')) {\n    window.location.hash = 'dashboard';\n    return null;\n  }\n\n  // Redirect to login if not authenticated and trying to access protected pages\n  if (!isAuthenticated && ['dashboard', 'transfer', 'transactions'].includes(currentPage)) {\n    window.location.hash = 'login';\n    return null;\n  }\n\n  return (\n    <div className=\"min-h-screen bg-gray-50\">\n      {currentPage === 'login' && <Login />}\n      {currentPage === 'register' && <Register />}\n      {currentPage === 'dashboard' && <DashboardPage />}
-      {currentPage === 'transfer' && <TransferPage />}
-      {currentPage === 'transactions' && <TransactionsPage />}\n    </div>\n  );\n}\n\nfunction App() {\n  return (\n    <QueryClientProvider client={queryClient}>\n      <AppContent />\n    </QueryClientProvider>\n  );\n}\n\nexport default App;
+import TransactionsPage from './pages/TransactionsPage';
+import { AdminPage } from './pages/AdminPage';
+import { NotFoundPage } from './pages/NotFoundPage';
+import ErrorBoundary from './components/ui/ErrorBoundary';
+import { PageErrorFallback } from './components/ui/PageErrorFallback';
+
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+const RootRedirect = () => {
+  const { isAuthenticated } = useAuthStore();
+  return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />;
+};
+
+function AppContent() {
+  const { initialize } = useAuthStore();
+
+  useEffect(() => {
+    // Initialize auth store from localStorage
+    initialize();
+  }, [initialize]);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/" element={<RootRedirect />} />
+          <Route path="/login" element={
+            <ErrorBoundary fallback={<PageErrorFallback />}>
+              <Login />
+            </ErrorBoundary>
+          } />
+          <Route path="/register" element={
+            <ErrorBoundary fallback={<PageErrorFallback />}>
+              <Register />
+            </ErrorBoundary>
+          } />
+          
+          <Route element={<PrivateRoute />}>
+            <Route path="/dashboard" element={
+              <ErrorBoundary fallback={<PageErrorFallback />}>
+                <DashboardPage />
+              </ErrorBoundary>
+            } />
+            <Route path="/transfer" element={
+              <ErrorBoundary fallback={<PageErrorFallback />}>
+                <TransferPage />
+              </ErrorBoundary>
+            } />
+            <Route path="/transactions" element={
+              <ErrorBoundary fallback={<PageErrorFallback />}>
+                <TransactionsPage />
+              </ErrorBoundary>
+            } />
+          </Route>
+          
+          <Route element={<PrivateRoute requiredRole="Admin" />}>
+            <Route path="/admin" element={
+              <ErrorBoundary fallback={<PageErrorFallback />}>
+                <AdminPage />
+              </ErrorBoundary>
+            } />
+          </Route>
+          
+          <Route path="*" element={
+            <ErrorBoundary fallback={<PageErrorFallback />}>
+              <NotFoundPage />
+            </ErrorBoundary>
+          } />
+        </Routes>
+      </ErrorBoundary>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+}
+
+export default App;

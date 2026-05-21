@@ -1,1 +1,241 @@
-import React, { useState } from 'react';\nimport { useMutation } from '@tanstack/react-query';\nimport { useAuthStore } from '../store/authStore';\nimport { registerApi, RegisterRequest } from '../api/auth';\n\ninterface RegisterForm {\n  firstName: string;\n  lastName: string;\n  email: string;\n  password: string;\n  confirmPassword: string;\n}\n\nconst Register: React.FC = () => {\n  const [form, setForm] = useState<RegisterForm>({\n    firstName: '',\n    lastName: '',\n    email: '',\n    password: '',\n    confirmPassword: '',\n  });\n  const [errors, setErrors] = useState<Partial<RegisterForm>>({});\n  const login = useAuthStore((state) => state.login);\n\n  const registerMutation = useMutation({\n    mutationFn: (userData: RegisterRequest) => registerApi(userData),\n    onSuccess: (data) => {\n      login(data.token, data.user);\n      window.location.href = '/dashboard';\n    },\n    onError: (error: any) => {\n      console.error('Registration failed:', error);\n    },\n  });\n\n  const validateForm = (): boolean => {\n    const newErrors: Partial<RegisterForm> = {};\n\n    // First name validation\n    if (!form.firstName.trim()) {\n      newErrors.firstName = 'First name is required';\n    } else if (form.firstName.trim().length < 2) {\n      newErrors.firstName = 'First name must be at least 2 characters';\n    }\n\n    // Last name validation\n    if (!form.lastName.trim()) {\n      newErrors.lastName = 'Last name is required';\n    } else if (form.lastName.trim().length < 2) {\n      newErrors.lastName = 'Last name must be at least 2 characters';\n    }\n\n    // Email validation\n    if (!form.email) {\n      newErrors.email = 'Email is required';\n    } else if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(form.email)) {\n      newErrors.email = 'Please enter a valid email address';\n    }\n\n    // Password validation\n    if (!form.password) {\n      newErrors.password = 'Password is required';\n    } else if (form.password.length < 8) {\n      newErrors.password = 'Password must be at least 8 characters';\n    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/.test(form.password)) {\n      newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';\n    }\n\n    // Confirm password validation\n    if (!form.confirmPassword) {\n      newErrors.confirmPassword = 'Please confirm your password';\n    } else if (form.password !== form.confirmPassword) {\n      newErrors.confirmPassword = 'Passwords do not match';\n    }\n\n    setErrors(newErrors);\n    return Object.keys(newErrors).length === 0;\n  };\n\n  const handleSubmit = (e: React.FormEvent) => {\n    e.preventDefault();\n    \n    if (!validateForm()) {\n      return;\n    }\n\n    const registerData: RegisterRequest = {\n      firstName: form.firstName.trim(),\n      lastName: form.lastName.trim(),\n      email: form.email.trim(),\n      password: form.password,\n      confirmPassword: form.confirmPassword,\n    };\n\n    registerMutation.mutate(registerData);\n  };\n\n  const handleInputChange = (field: keyof RegisterForm, value: string) => {\n    setForm(prev => ({ ...prev, [field]: value }));\n    // Clear error when user starts typing\n    if (errors[field]) {\n      setErrors(prev => ({ ...prev, [field]: undefined }));\n    }\n  };\n\n  const getErrorMessage = (): string => {\n    if (registerMutation.error) {\n      const error = registerMutation.error as any;\n      return error.response?.data?.message || error.message || 'Registration failed. Please try again.';\n    }\n    return '';\n  };\n\n  return (\n    <div className=\"min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8\">\n      <div className=\"max-w-md w-full space-y-8\">\n        {/* Header */}\n        <div className=\"text-center\">\n          <h2 className=\"text-3xl font-bold text-gray-900 mb-2\">\n            Create Account\n          </h2>\n          <p className=\"text-gray-600\">\n            Join our secure banking platform\n          </p>\n        </div>\n\n        {/* Register Form */}\n        <div className=\"bg-white rounded-lg shadow-md p-8\">\n          <form onSubmit={handleSubmit} className=\"space-y-6\">\n            {/* API Error Message */}\n            {registerMutation.error && (\n              <div className=\"bg-red-50 border border-red-200 rounded-md p-4\">\n                <div className=\"flex\">\n                  <div className=\"flex-shrink-0\">\n                    <svg className=\"h-5 w-5 text-red-400\" viewBox=\"0 0 20 20\" fill=\"currentColor\">\n                      <path fillRule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z\" clipRule=\"evenodd\" />\n                    </svg>\n                  </div>\n                  <div className=\"ml-3\">\n                    <p className=\"text-sm text-red-800\">\n                      {getErrorMessage()}\n                    </p>\n                  </div>\n                </div>\n              </div>\n            )}\n\n            {/* Name Fields */}\n            <div className=\"grid grid-cols-2 gap-4\">\n              <div>\n                <label htmlFor=\"firstName\" className=\"block text-sm font-medium text-gray-700 mb-2\">\n                  First Name\n                </label>\n                <input\n                  id=\"firstName\"\n                  type=\"text\"\n                  value={form.firstName}\n                  onChange={(e) => handleInputChange('firstName', e.target.value)}\n                  className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${\n                    errors.firstName ? 'border-red-300' : 'border-gray-300'\n                  }`}\n                  placeholder=\"First name\"\n                  disabled={registerMutation.isPending}\n                />\n                {errors.firstName && (\n                  <p className=\"mt-1 text-sm text-red-600\">{errors.firstName}</p>\n                )}\n              </div>\n\n              <div>\n                <label htmlFor=\"lastName\" className=\"block text-sm font-medium text-gray-700 mb-2\">\n                  Last Name\n                </label>\n                <input\n                  id=\"lastName\"\n                  type=\"text\"\n                  value={form.lastName}\n                  onChange={(e) => handleInputChange('lastName', e.target.value)}\n                  className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${\n                    errors.lastName ? 'border-red-300' : 'border-gray-300'\n                  }`}\n                  placeholder=\"Last name\"\n                  disabled={registerMutation.isPending}\n                />\n                {errors.lastName && (\n                  <p className=\"mt-1 text-sm text-red-600\">{errors.lastName}</p>\n                )}\n              </div>\n            </div>\n\n            {/* Email Field */}\n            <div>\n              <label htmlFor=\"email\" className=\"block text-sm font-medium text-gray-700 mb-2\">\n                Email Address\n              </label>\n              <input\n                id=\"email\"\n                type=\"email\"\n                value={form.email}\n                onChange={(e) => handleInputChange('email', e.target.value)}\n                className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${\n                  errors.email ? 'border-red-300' : 'border-gray-300'\n                }`}\n                placeholder=\"Enter your email\"\n                disabled={registerMutation.isPending}\n              />\n              {errors.email && (\n                <p className=\"mt-1 text-sm text-red-600\">{errors.email}</p>\n              )}\n            </div>\n\n            {/* Password Field */}\n            <div>\n              <label htmlFor=\"password\" className=\"block text-sm font-medium text-gray-700 mb-2\">\n                Password\n              </label>\n              <input\n                id=\"password\"\n                type=\"password\"\n                value={form.password}\n                onChange={(e) => handleInputChange('password', e.target.value)}\n                className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${\n                  errors.password ? 'border-red-300' : 'border-gray-300'\n                }`}\n                placeholder=\"Create a password\"\n                disabled={registerMutation.isPending}\n              />\n              {errors.password && (\n                <p className=\"mt-1 text-sm text-red-600\">{errors.password}</p>\n              )}\n              <p className=\"mt-1 text-xs text-gray-500\">\n                Must be at least 8 characters with uppercase, lowercase, and number\n              </p>\n            </div>\n\n            {/* Confirm Password Field */}\n            <div>\n              <label htmlFor=\"confirmPassword\" className=\"block text-sm font-medium text-gray-700 mb-2\">\n                Confirm Password\n              </label>\n              <input\n                id=\"confirmPassword\"\n                type=\"password\"\n                value={form.confirmPassword}\n                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}\n                className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${\n                  errors.confirmPassword ? 'border-red-300' : 'border-gray-300'\n                }`}\n                placeholder=\"Confirm your password\"\n                disabled={registerMutation.isPending}\n              />\n              {errors.confirmPassword && (\n                <p className=\"mt-1 text-sm text-red-600\">{errors.confirmPassword}</p>\n              )}\n            </div>\n\n            {/* Submit Button */}\n            <button\n              type=\"submit\"\n              disabled={registerMutation.isPending}\n              className=\"w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed\"\n            >\n              {registerMutation.isPending ? (\n                <div className=\"flex items-center\">\n                  <svg className=\"animate-spin -ml-1 mr-3 h-5 w-5 text-white\" xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\">\n                    <circle className=\"opacity-25\" cx=\"12\" cy=\"12\" r=\"10\" stroke=\"currentColor\" strokeWidth=\"4\"></circle>\n                    <path className=\"opacity-75\" fill=\"currentColor\" d=\"M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z\"></path>\n                  </svg>\n                  Creating account...\n                </div>\n              ) : (\n                'Create Account'\n              )}\n            </button>\n          </form>\n\n          {/* Login Link */}\n          <div className=\"mt-6 text-center\">\n            <p className=\"text-sm text-gray-600\">\n              Already have an account?{' '}\n              <a href=\"/login\" className=\"font-medium text-blue-600 hover:text-blue-500\">\n                Sign in here\n              </a>\n            </p>\n          </div>\n        </div>\n      </div>\n    </div>\n  );\n};\n\nexport default Register;
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useAuthStore } from '../store/authStore';
+import { registerApi } from '../api/auth';
+import { registerSchema, RegisterFormData, getPasswordStrength } from '../validation/schemas';
+
+const Register: React.FC = () => {
+  const navigate = useNavigate();
+  const login = useAuthStore((state) => state.login);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isValid }
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    mode: 'onChange'
+  });
+
+  const password = watch('password', '');
+  const passwordStrength = password ? getPasswordStrength(password) : null;
+
+  const registerMutation = useMutation({
+    mutationFn: registerApi,
+    onSuccess: (data) => {
+      login(data.token, data.user);
+      navigate('/dashboard');
+    },
+    onError: (error: any) => {
+      console.error('Registration failed:', error);
+    }
+  });
+
+  const onSubmit = (data: RegisterFormData) => {
+    // Split fullName into firstName and lastName for API
+    const nameParts = data.fullName.trim().split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ') || nameParts[0];
+
+    registerMutation.mutate({
+      firstName,
+      lastName,
+      email: data.email,
+      password: data.password,
+      confirmPassword: data.confirmPassword
+    });
+  };
+
+  const getErrorMessage = (): string => {
+    if (registerMutation.error) {
+      const error = registerMutation.error as any;
+      return error.response?.data?.message || error.message || 'Registration failed. Please try again.';
+    }
+    return '';
+  };
+
+  const isSubmitDisabled = !isValid || registerMutation.isPending;
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        {/* Header */}
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            Create Account
+          </h2>
+          <p className="text-gray-600">
+            Join our secure banking platform
+          </p>
+        </div>
+
+        {/* Register Form */}
+        <div className="bg-white rounded-lg shadow-md p-8">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* API Error Message */}
+            {registerMutation.error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-800">
+                      {getErrorMessage()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Full Name Field */}
+            <div>
+              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
+                Full Name
+              </label>
+              <input
+                id="fullName"
+                type="text"
+                {...register('fullName')}
+                className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.fullName ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="Enter your full name"
+                disabled={registerMutation.isPending}
+              />
+              {errors.fullName && (
+                <p className="mt-1 text-sm text-red-600">{errors.fullName.message}</p>
+              )}
+            </div>
+
+            {/* Email Field */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <input
+                id="email"
+                type="email"
+                {...register('email')}
+                className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.email ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="Enter your email"
+                disabled={registerMutation.isPending}
+              />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+              )}
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                {...register('password')}
+                className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.password ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="Create a password"
+                disabled={registerMutation.isPending}
+              />
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+              )}
+              
+              {/* Password Strength Indicator */}
+              {password && passwordStrength && (
+                <div className="mt-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-gray-600">Password strength:</span>
+                    <span className={`text-xs font-medium ${
+                      passwordStrength.strength === 'weak' ? 'text-red-600' :
+                      passwordStrength.strength === 'medium' ? 'text-yellow-600' :
+                      'text-green-600'
+                    }`}>
+                      {passwordStrength.label}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full transition-all ${
+                        passwordStrength.strength === 'weak' ? 'bg-red-500 w-1/3' :
+                        passwordStrength.strength === 'medium' ? 'bg-yellow-500 w-2/3' :
+                        'bg-green-500 w-full'
+                      }`}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              <p className="mt-1 text-xs text-gray-500">
+                Must be at least 8 characters with uppercase, lowercase, and number
+              </p>
+            </div>
+
+            {/* Confirm Password Field */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                {...register('confirmPassword')}
+                className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="Confirm your password"
+                disabled={registerMutation.isPending}
+              />
+              {errors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isSubmitDisabled}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {registerMutation.isPending ? (
+                <div className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Creating account...
+                </div>
+              ) : (
+                'Create Account'
+              )}
+            </button>
+          </form>
+
+          {/* Login Link */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Already have an account?{' '}
+              <a href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+                Sign in here
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Register;
