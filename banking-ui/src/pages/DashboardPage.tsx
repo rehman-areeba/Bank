@@ -269,7 +269,10 @@ const DashboardPage: React.FC = () => {
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <button className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow text-left">
+              <button 
+                onClick={() => window.location.hash = 'transfer'}
+                className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow text-left"
+              >
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                     <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -283,7 +286,10 @@ const DashboardPage: React.FC = () => {
                 </div>
               </button>
 
-              <button className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow text-left">
+              <button 
+                onClick={() => window.location.hash = 'transactions'}
+                className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow text-left"
+              >
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                     <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
