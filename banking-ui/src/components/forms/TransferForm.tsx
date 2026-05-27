@@ -8,16 +8,6 @@ import { transferFundsApi } from '../../api/transfers';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { Toast } from '../common/Toast';
 import { transferSchema } from '../../validation/schemas';
-import { z } from 'zod';
-import { FormSkeleton } from '../skeletons';
-
-interface Account {
-  id: number;
-  accountNumber: string;
-  accountType: string;
-  balance: number;
-  isActive: boolean;
-}
 
 type TransferFormData = {
   fromAccountId: string;
@@ -40,14 +30,12 @@ export const TransferForm: React.FC = () => {
     register,
     handleSubmit,
     watch,
-    formState: { errors, isValid },
-    setError,
-    clearErrors
+    formState: { errors, isValid }
   } = useForm<TransferFormData>({
     resolver: zodResolver(
       transferSchema.refine(
         (data) => {
-          const selectedAccount = accounts?.find((acc: Account) => acc.id === parseInt(data.fromAccountId));
+          const selectedAccount = accounts?.find((acc) => acc.id === data.fromAccountId);
           return !selectedAccount || data.amount <= selectedAccount.balance;
         },
         {
@@ -56,7 +44,7 @@ export const TransferForm: React.FC = () => {
         }
       ).refine(
         (data) => {
-          const selectedAccount = accounts?.find((acc: Account) => acc.id === parseInt(data.fromAccountId));
+          const selectedAccount = accounts?.find((acc) => acc.id === data.fromAccountId);
           return !selectedAccount || selectedAccount.accountNumber !== data.toAccountNumber;
         },
         {
@@ -72,7 +60,7 @@ export const TransferForm: React.FC = () => {
   const toAccountNumber = watch('toAccountNumber');
   const amount = watch('amount');
 
-  const selectedAccount = accounts?.find((acc: Account) => acc.id === parseInt(fromAccountId));
+  const selectedAccount = accounts?.find((acc) => acc.id === fromAccountId);
   const maxAmount = selectedAccount?.balance || 0;
 
   const transferMutation = useMutation({
@@ -87,17 +75,17 @@ export const TransferForm: React.FC = () => {
     }
   });
 
-  const onSubmit = (data: TransferFormData) => {
+  const onSubmit = () => {
     setShowConfirm(true);
   };
 
   const handleConfirmTransfer = () => {
-    const data = watch();
+    const formData = watch();
     const transferData = {
-      fromAccountId: parseInt(data.fromAccountId),
-      toAccountNumber: data.toAccountNumber,
-      amount: data.amount,
-      description: data.description || 'Money transfer'
+      fromAccountId: formData.fromAccountId,
+      toAccountId: formData.toAccountNumber,
+      amount: formData.amount,
+      description: formData.description || 'Money transfer'
     };
     
     transferMutation.mutate(transferData);
@@ -168,9 +156,9 @@ export const TransferForm: React.FC = () => {
               }`}
             >
               <option value="">Select source account</option>
-              {accounts?.filter((acc: Account) => acc.isActive).map((account: Account) => (
+              {accounts?.filter((acc) => acc.isActive).map((account) => (
                 <option key={account.id} value={account.id}>
-                  {account.accountNumber} - {account.accountType} ({formatBalance(account.balance)})
+                  {account.accountNumber} - {account.type} ({formatBalance(account.balance)})
                 </option>
               ))}
             </select>

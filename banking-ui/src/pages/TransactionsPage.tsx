@@ -44,12 +44,13 @@ const TransactionsPage: React.FC = () => {
   } = useInfiniteQuery({
     queryKey: ['transactions', filters],
     queryFn: ({ pageParam = 1 }) => getTransactionsApi({ 
-      page: pageParam, 
+      page: pageParam as number, 
       pageSize: 20,
       ...filters 
     }),
-    getNextPageParam: (lastPage, pages) => {
-      return lastPage.hasMore ? pages.length + 1 : undefined;
+    initialPageParam: 1,
+    getNextPageParam: (lastPage: any) => {
+      return lastPage.hasMore ? lastPage.currentPage + 1 : undefined;
     },
     staleTime: 2 * 60 * 1000
   });
@@ -124,7 +125,7 @@ const TransactionsPage: React.FC = () => {
     }
   };
 
-  const allTransactions = data?.pages.flatMap(page => page.transactions) || [];
+  const allTransactions = data?.pages.flatMap((page: any) => page.transactions || []) || [];
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -8,12 +8,18 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
-using System.Security.Claims;
+using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ── Configure Kestrel for dynamic PORT binding (Render, Azure, etc.) ──────────
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.ListenAnyIP(int.Parse(port));
+});
 
 // ── Database ──────────────────────────────────────────────────────────────────
 builder.Services.AddDbContext<BankingDbContext>(options =>
@@ -39,12 +45,37 @@ builder.Services.AddScoped<IValidator<RegisterRequestDto>, RegisterRequestDtoVal
 builder.Services.AddScoped<IValidator<TransferRequestDto>, TransferRequestDtoValidator>();
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
+// Get allowed origins from configuration (supports multiple origins)
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
+    ?? Array.Empty<string>();
+
 builder.Services.AddCors(options =>
-    options.AddPolicy("ReactDevServer", policy =>
-        policy.WithOrigins("http://localhost:5173")
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        }
+        else
+        {
+            // Allow all origins if none configured (for initial cloud deployment)
+            policy.AllowAnyOrigin()
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        }
+    });
+    
+    options.AddPolicy("Development", policy =>
+    {
+        policy.AllowAnyOrigin()
               .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials()));
+              .AllowAnyMethod();
+    });
+});
 
 // ── Authentication (JWT) ──────────────────────────────────────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"]
@@ -67,7 +98,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// ── Rate Limiting ────────────────────────────────────────────────────────────
+// ── Rate Limiting ─────────────────────────────────────────────────────────────
 builder.Services.AddRateLimiter(options =>
 {
     // Fixed window: 10 requests per minute per IP for /api/auth/*
@@ -103,51 +134,104 @@ builder.Services.AddRateLimiter(options =>
     };
 });
 
-// ── Swagger ───────────────────────────────────────────────────────────────────
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
+// ── Swagger (only in Development and Staging) ─────────────────────────────────
+if (!builder.Environment.IsProduction())
 {
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Banking API", Version = "v1" });
-
-    var jwtScheme = new OpenApiSecurityScheme
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(options =>
     {
-        Name         = "Authorization",
-        Type         = SecuritySchemeType.Http,
-        Scheme       = "bearer",
-        BearerFormat = "JWT",
-        In           = ParameterLocation.Header,
-        Description  = "Enter your JWT token (without 'Bearer ' prefix)"
-    };
+        options.SwaggerDoc("v1", new OpenApiInfo 
+        { 
+            Title = "Banking API", 
+            Version = "v1",
+            Description = "Banking System API - Development/Staging Environment"
+        });
 
-    options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, jwtScheme);
-
-    options.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
-    {
+        var jwtScheme = new OpenApiSecurityScheme
         {
-            new OpenApiSecuritySchemeReference(JwtBearerDefaults.AuthenticationScheme),
-            new List<string>()
-        }
+            Name         = "Authorization",
+            Type         = SecuritySchemeType.Http,
+            Scheme       = "bearer",
+            BearerFormat = "JWT",
+            In           = ParameterLocation.Header,
+            Description  = "Enter your JWT token (without 'Bearer ' prefix)"
+        };
+
+        options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, jwtScheme);
+
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = JwtBearerDefaults.AuthenticationScheme
+                    }
+                },
+                new List<string>()
+            }
+        });
     });
-});
+}
 
 builder.Services.AddControllers();
 
 // ── Pipeline ──────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
+// Global exception handling
 app.UseMiddleware<ExceptionMiddleware>();
 
-if (app.Environment.IsDevelopment())
+// Swagger (only in non-production)
+if (!app.Environment.IsProduction())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Banking API v1"));
+    app.UseSwaggerUI(c => 
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Banking API v1");
+        c.RoutePrefix = "swagger";
+    });
 }
 
-app.UseHttpsRedirection();
+// HTTPS redirection (disable in development if needed)
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+// Health check endpoint for cloud platforms
+app.MapGet("/health", () => Results.Ok(new 
+{ 
+    status = "healthy", 
+    timestamp = DateTime.UtcNow,
+    environment = app.Environment.EnvironmentName,
+    version = "1.0.0"
+})).AllowAnonymous();
+
+// Rate limiting
 app.UseRateLimiter();
-app.UseCors("ReactDevServer");
+
+// CORS - use appropriate policy based on environment
+var corsPolicy = app.Environment.IsDevelopment() ? "Development" : "AllowFrontend";
+app.UseCors(corsPolicy);
+
+// Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Map controllers
 app.MapControllers();
 
+// Log startup information
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+logger.LogInformation("Banking API started on port {Port} in {Environment} mode", 
+    port, app.Environment.EnvironmentName);
+logger.LogInformation("CORS Policy: {CorsPolicy}, Allowed Origins: {Origins}", 
+    corsPolicy, string.Join(", ", allowedOrigins));
+
 app.Run();
+
+// Make Program class accessible for integration tests
+public partial class Program { }

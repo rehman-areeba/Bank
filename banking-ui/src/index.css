@@ -1,4 +1,84 @@
-@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\n@layer base {\n  * {\n    box-sizing: border-box;\n  }\n\n  body {\n    margin: 0;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',\n      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',\n      sans-serif;\n    -webkit-font-smoothing: antialiased;\n    -moz-osx-font-smoothing: grayscale;\n  }\n\n  #root {\n    min-height: 100vh;\n  }\n}\n\n@layer components {\n  /* Custom form input styles */\n  .form-input {\n    @apply w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;\n  }\n\n  .form-input-error {\n    @apply border-red-300 focus:ring-red-500 focus:border-red-500;\n  }\n\n  /* Custom button styles */\n  .btn-primary {\n    @apply w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed;\n  }\n\n  .btn-secondary {\n    @apply w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed;\n  }\n\n  /* Loading spinner */\n  .spinner {\n    @apply animate-spin h-5 w-5;\n  }\n\n  /* Error message styles */\n  .error-message {\n    @apply mt-1 text-sm text-red-600;\n  }\n\n  /* Success message styles */\n  .success-message {\n    @apply mt-1 text-sm text-green-600;\n  }\n}\n\n@layer utilities {\n  /* Custom scrollbar */\n  .scrollbar-thin {\n    scrollbar-width: thin;\n  }\n\n  .scrollbar-thin::-webkit-scrollbar {\n    width: 6px;\n  }\n\n  .scrollbar-thin::-webkit-scrollbar-track {\n    background: #f1f1f1;\n  }\n\n  .scrollbar-thin::-webkit-scrollbar-thumb {\n    background: #c1c1c1;\n    border-radius: 3px;\n  }\n\n  .scrollbar-thin::-webkit-scrollbar-thumb:hover {\n    background: #a8a8a8;\n  }\n}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  /* Custom form input styles */
+  .form-input {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+  }
+
+  .form-input-error {
+    @apply border-red-300 focus:ring-red-500 focus:border-red-500;
+  }
+
+  /* Custom button styles */
+  .btn-primary {
+    @apply w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    @apply animate-spin h-5 w-5;
+  }
+
+  /* Error message styles */
+  .error-message {
+    @apply mt-1 text-sm text-red-600;
+  }
+
+  /* Success message styles */
+  .success-message {
+    @apply mt-1 text-sm text-green-600;
+  }
+}
+
+@layer utilities {
+  /* Custom scrollbar */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+}
 
 
 /* ========================================

@@ -27,7 +27,13 @@ const Register: React.FC = () => {
   const registerMutation = useMutation({
     mutationFn: registerApi,
     onSuccess: (data) => {
-      login(data.token, data.user);
+      const user = {
+        id: data.userId,
+        name: data.fullName,
+        email: '', // Will be fetched from /me endpoint if needed
+        role: data.role
+      };
+      login(data.token, user);
       navigate('/dashboard');
     },
     onError: (error: any) => {
@@ -36,14 +42,8 @@ const Register: React.FC = () => {
   });
 
   const onSubmit = (data: RegisterFormData) => {
-    // Split fullName into firstName and lastName for API
-    const nameParts = data.fullName.trim().split(' ');
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(' ') || nameParts[0];
-
     registerMutation.mutate({
-      firstName,
-      lastName,
+      fullName: data.fullName,
       email: data.email,
       password: data.password,
       confirmPassword: data.confirmPassword
@@ -53,7 +53,11 @@ const Register: React.FC = () => {
   const getErrorMessage = (): string => {
     if (registerMutation.error) {
       const error = registerMutation.error as any;
-      return error.response?.data?.message || error.message || 'Registration failed. Please try again.';
+      const data = error.response?.data;
+      if (data?.errors?.length) {
+        return data.errors.map((e: any) => e.message).join(' ');
+      }
+      return data?.message || data?.detail || error.message || 'Registration failed. Please try again.';
     }
     return '';
   };
@@ -179,7 +183,7 @@ const Register: React.FC = () => {
               )}
               
               <p className="mt-1 text-xs text-gray-500">
-                Must be at least 8 characters with uppercase, lowercase, and number
+                Must be at least 8 characters with uppercase, lowercase, number, and special character
               </p>
             </div>
 

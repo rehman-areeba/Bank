@@ -58,7 +58,6 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({ isOpen, 
   });
 
   const selectedType = watch('type');
-  const agreedToTerms = watch('agreedToTerms');
 
   const createAccountMutation = useMutation({
     mutationFn: createAccountApi,

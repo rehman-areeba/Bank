@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
@@ -28,28 +28,30 @@ const RootRedirect = () => {
   return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />;
 };
 
+const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated } = useAuthStore();
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <>{children}</>;
+};
+
 function AppContent() {
-  const { initialize } = useAuthStore();
-
-  useEffect(() => {
-    // Initialize auth store from localStorage
-    initialize();
-  }, [initialize]);
-
   return (
     <div className="min-h-screen bg-gray-50">
       <ErrorBoundary>
         <Routes>
           <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={
-            <ErrorBoundary fallback={<PageErrorFallback />}>
-              <Login />
-            </ErrorBoundary>
+            <PublicRoute>
+              <ErrorBoundary fallback={<PageErrorFallback />}>
+                <Login />
+              </ErrorBoundary>
+            </PublicRoute>
           } />
           <Route path="/register" element={
-            <ErrorBoundary fallback={<PageErrorFallback />}>
-              <Register />
-            </ErrorBoundary>
+            <PublicRoute>
+              <ErrorBoundary fallback={<PageErrorFallback />}>
+                <Register />
+              </ErrorBoundary>
+            </PublicRoute>
           } />
           
           <Route element={<PrivateRoute />}>

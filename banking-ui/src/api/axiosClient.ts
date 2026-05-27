@@ -1,12 +1,21 @@
 import axios from 'axios';
+import { config } from '../config';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5245';
+// Get API base URL from centralized config
+const API_BASE_URL = config.apiUrl;
+
+// Log configuration in development mode
+if (config.isDevelopment) {
+  console.log('[API Config] Base URL:', API_BASE_URL);
+  console.log('[API Config] Mode:', config.mode);
+}
 
 const axiosClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // 30 second timeout
 });
 
 // Request interceptor to attach Authorization header
@@ -25,14 +34,12 @@ axiosClient.interceptors.request.use(
 
 // Response interceptor to handle 401 errors
 axiosClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear token and redirect to login
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      localStorage.removeItem('user');
+      window.location.replace('/login');
     }
     return Promise.reject(error);
   }

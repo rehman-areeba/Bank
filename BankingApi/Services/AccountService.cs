@@ -175,6 +175,6 @@ public class AccountService(IUnitOfWork unitOfWork) : IAccountService
     private static string GenerateAccountNumber()
     {
         var random = new Random();
-        return $"{random.Next(1000000000, 999999999)}";
+        return $"{random.Next(100000000, 999999999)}";
     }
 }

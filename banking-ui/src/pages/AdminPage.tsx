@@ -19,30 +19,27 @@ export const AdminPage: React.FC = () => {
   };
 
   // Mock queries for each tab - replace with actual API calls
-  const { data: usersData, isLoading: usersLoading } = useQuery({
+  const { isLoading: usersLoading } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
-      // Replace with actual API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       return [];
     },
     enabled: activeTab === 'users'
   });
 
-  const { data: transactionsData, isLoading: transactionsLoading } = useQuery({
+  const { isLoading: transactionsLoading } = useQuery({
     queryKey: ['admin-transactions'],
     queryFn: async () => {
-      // Replace with actual API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       return [];
     },
     enabled: activeTab === 'transactions'
   });
 
-  const { data: auditLogsData, isLoading: auditLogsLoading } = useQuery({
+  const { isLoading: auditLogsLoading } = useQuery({
     queryKey: ['admin-audit-logs'],
     queryFn: async () => {
-      // Replace with actual API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       return [];
     },

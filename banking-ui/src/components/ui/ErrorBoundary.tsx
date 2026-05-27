@@ -9,7 +9,7 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
-  errorInfo: string | null;
+  errorInfo: string | null | undefined;
 }
 
 // Wrapper component to use navigate hook in class component
@@ -110,7 +110,7 @@ class ErrorBoundaryClass extends Component<Props & { navigate: (path: string) =>
   }
 }
 
-const ErrorDetails = ({ error, errorInfo }: { error: Error; errorInfo: string | null }) => {
+const ErrorDetails = ({ error, errorInfo }: { error: Error; errorInfo: string | null | undefined }) => {
   const [isExpanded, setIsExpanded] = React.useState(false);
 
   return (
@@ -126,7 +126,9 @@ const ErrorDetails = ({ error, errorInfo }: { error: Error; errorInfo: string | 
         <div className="mt-2 p-3 bg-gray-100 rounded-md">
           <pre className="text-xs text-gray-700 whitespace-pre-wrap break-words">
             {error.message}
-            {errorInfo && `\n\nComponent Stack:${errorInfo}`}
+            {errorInfo && `
+
+Component Stack:${errorInfo}`}
           </pre>
         </div>
       )}

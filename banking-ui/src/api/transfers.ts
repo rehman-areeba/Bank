@@ -1,20 +1,18 @@
-import { axiosClient } from './axiosClient';
+import axiosClient from './axiosClient';
 
 export interface TransferRequest {
-  fromAccountId: number;
-  toAccountNumber: string;
+  fromAccountId: string;
+  toAccountId: string;
   amount: number;
-  description: string;
+  description?: string;
 }
 
 export interface TransferResponse {
-  id: number;
-  fromAccountId: number;
-  toAccountId: number;
-  amount: number;
-  description: string;
+  transactionId: string;
   status: string;
-  createdAt: string;
+  amount: number;
+  timestamp: string;
+  updatedBalance: number;
 }
 
 export const transferFundsApi = async (transferData: TransferRequest): Promise<TransferResponse> => {

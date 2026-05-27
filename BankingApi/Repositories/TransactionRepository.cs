@@ -40,4 +40,18 @@ public class TransactionRepository(BankingDbContext context) : ITransactionRepos
         await _context.Transactions.AddAsync(transaction, cancellationToken);
         return transaction;
     }
+
+    public async Task<IEnumerable<Transaction>> GetRecentByAccountIdsAsync(
+        IEnumerable<Guid> accountIds,
+        int count,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.Transactions
+            .Where(t => accountIds.Contains(t.FromAccountId) || (t.ToAccountId.HasValue && accountIds.Contains(t.ToAccountId.Value)))
+            .OrderByDescending(t => t.CreatedAt)
+            .Take(count)
+            .Include(t => t.FromAccount)
+            .Include(t => t.ToAccount)
+            .ToListAsync(cancellationToken);
+    }
 }

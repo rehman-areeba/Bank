@@ -24,7 +24,13 @@ const Login: React.FC = () => {
   const loginMutation = useMutation({
     mutationFn: loginApi,
     onSuccess: (data) => {
-      login(data.token, data.user);
+      const user = {
+        id: data.userId,
+        name: data.fullName,
+        email: '', // Will be fetched from /me endpoint if needed
+        role: data.role
+      };
+      login(data.token, user);
       announceToScreenReader('Login successful. Redirecting to dashboard.', 'polite');
       navigate('/dashboard');
     },

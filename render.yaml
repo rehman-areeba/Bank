@@ -1,0 +1,25 @@
+# Render.com deployment configuration
+# Place this file in the root of your repository
+
+services:
+  - type: web
+    name: banking-api
+    env: dotnet
+    region: oregon
+    plan: free
+    buildCommand: dotnet publish BankingApi/BankingApi.csproj -c Release -o out
+    startCommand: dotnet out/BankingApi.dll
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://0.0.0.0:$PORT
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      - key: Jwt__Key
+        generateValue: true
+        sync: false
+      - key: Cors__AllowedOrigins__0
+        sync: false
+    healthCheckPath: /health
+    autoDeploy: true

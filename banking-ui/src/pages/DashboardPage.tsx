@@ -9,25 +9,6 @@ import { DashboardSkeleton } from '../components/skeletons';
 import ErrorState from '../components/ui/ErrorState';
 import { MobileNav } from '../components/layout/MobileNav';
 
-interface Transaction {
-  id: number;
-  type: string;
-  amount: number;
-  description: string;
-  status: string;
-  createdAt: string;
-  accountId: number;
-}
-
-interface Account {
-  id: number;
-  accountNumber: string;
-  accountType: string;
-  balance: number;
-  isActive: boolean;
-  createdAt: string;
-}
-
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
@@ -80,12 +61,13 @@ const DashboardPage: React.FC = () => {
   const getTotalBalance = (): number => {
     if (!accounts) return 0;
     return accounts
-      .filter((account: Account) => account.isActive)
-      .reduce((total: number, account: Account) => total + account.balance, 0);
+      .filter((account) => account.isActive)
+      .reduce((total, account) => total + account.balance, 0);
   };
 
   const getTransactionIcon = (type: string): JSX.Element => {
-    switch (type.toLowerCase()) {
+    const normalizedType = type?.toLowerCase() || '';
+    switch (normalizedType) {
       case 'deposit':
         return (
           <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
@@ -128,11 +110,12 @@ const DashboardPage: React.FC = () => {
       failed: 'bg-red-100 text-red-800',
     };
     
-    const colorClass = statusColors[status.toLowerCase() as keyof typeof statusColors] || 'bg-gray-100 text-gray-800';
+    const normalizedStatus = status?.toLowerCase() || '';
+    const colorClass = statusColors[normalizedStatus as keyof typeof statusColors] || 'bg-gray-100 text-gray-800';
     
     return (
       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>
-        {status}
+        {status || 'Unknown'}
       </span>
     );
   };
@@ -247,7 +230,7 @@ const DashboardPage: React.FC = () => {
             <h2 id="total-balance-heading" className="text-lg font-medium mb-2">Total Balance</h2>
             <p className="text-3xl font-bold" aria-label={`Total balance: ${formatBalance(getTotalBalance())}`}>{formatBalance(getTotalBalance())}</p>
             <p className="text-blue-100 text-sm mt-2">
-              Across {accounts?.filter((acc: Account) => acc.isActive).length || 0} active accounts
+              Across {accounts?.filter((acc) => acc.isActive).length || 0} active accounts
             </p>
           </section>
 
@@ -266,16 +249,15 @@ const DashboardPage: React.FC = () => {
             
             {accounts && accounts.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {accounts.map((account: Account) => (
+                {accounts.map((account) => (
                   <BalanceCard
                     key={account.id}
                     accountNumber={account.accountNumber}
-                    type={account.accountType}
+                    type={account.type}
                     balance={account.balance}
                     isActive={account.isActive}
                     onClick={() => {
-                      // Navigate to account details
-                      console.log('Navigate to account:', account.id);
+                      navigate(`/account/${account.id}`);
                     }}
                   />
                 ))}
@@ -399,7 +381,7 @@ const DashboardPage: React.FC = () => {
                 </div>
               ) : recentTransactions && recentTransactions.length > 0 ? (
                 <div className="space-y-4">
-                  {recentTransactions.slice(0, 5).map((transaction: Transaction) => (
+                  {recentTransactions.slice(0, 5).map((transaction) => (
                     <div key={transaction.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0" role="listitem">
                       <div className="flex items-center space-x-3">
                         <div aria-hidden="true">{getTransactionIcon(transaction.type)}</div>

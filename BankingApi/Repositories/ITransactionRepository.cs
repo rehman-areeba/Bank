@@ -10,5 +10,9 @@ public interface ITransactionRepository
         int pageNumber, 
         int pageSize, 
         CancellationToken cancellationToken = default);
+    Task<IEnumerable<Transaction>> GetRecentByAccountIdsAsync(
+        IEnumerable<Guid> accountIds,
+        int count,
+        CancellationToken cancellationToken = default);
     Task<Transaction> CreateAsync(Transaction transaction, CancellationToken cancellationToken = default);
 }

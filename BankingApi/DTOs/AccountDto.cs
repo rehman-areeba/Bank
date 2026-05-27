@@ -1,9 +1,11 @@
 namespace BankingApi.DTOs;
 
+using System.Text.Json.Serialization;
+
 public record AccountDto(
     Guid Id,
     string AccountNumber,
-    string Type,
+    [property: JsonPropertyName("accountType")] string Type,
     decimal Balance,
     bool IsActive,
     DateTime CreatedAt

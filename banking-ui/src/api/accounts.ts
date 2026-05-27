@@ -1,9 +1,9 @@
 import axiosClient from './axiosClient';
 
 export interface Account {
-  id: number;
+  id: string;
   accountNumber: string;
-  accountType: string;
+  type: string;
   balance: number;
   isActive: boolean;
   createdAt: string;
@@ -19,13 +19,13 @@ export interface DepositWithdrawRequest {
 }
 
 export interface Transaction {
-  id: number;
+  id: string;
   type: string;
   amount: number;
   description: string;
   status: string;
   createdAt: string;
-  accountId: number;
+  accountId: string;
 }
 
 export interface TransactionHistoryResponse {
@@ -42,50 +42,42 @@ export const getAccountsApi = async (): Promise<Account[]> => {
 };
 
 // Get specific account details
-export const getAccountApi = async (accountId: number): Promise<Account> => {
+export const getAccountApi = async (accountId: string): Promise<Account> => {
   const response = await axiosClient.get(`/api/accounts/${accountId}`);
   return response.data;
 };
 
 // Get account balance
-export const getAccountBalanceApi = async (accountId: number): Promise<{ balance: number }> => {
+export const getAccountBalanceApi = async (accountId: string): Promise<{ balance: number }> => {
   const response = await axiosClient.get(`/api/accounts/${accountId}/balance`);
   return response.data;
 };
 
 // Create new account
 export const createAccountApi = async (accountData: { type: string }): Promise<Account> => {
-  const response = await axiosClient.post('/api/accounts', { accountType: accountData.type });
+  const response = await axiosClient.post('/api/accounts', { type: accountData.type });
   return response.data;
 };
 
 // Deposit money
-export const depositApi = async (accountId: number, depositData: DepositWithdrawRequest): Promise<void> => {
+export const depositApi = async (accountId: string, depositData: DepositWithdrawRequest): Promise<void> => {
   await axiosClient.post(`/api/accounts/${accountId}/deposit`, depositData);
 };
 
 // Withdraw money
-export const withdrawApi = async (accountId: number, withdrawData: DepositWithdrawRequest): Promise<void> => {
+export const withdrawApi = async (accountId: string, withdrawData: DepositWithdrawRequest): Promise<void> => {
   await axiosClient.post(`/api/accounts/${accountId}/withdraw`, withdrawData);
 };
 
 // Get transaction history for an account
 export const getTransactionHistoryApi = async (
-  accountId: number,
-  page: number = 1,
-  pageSize: number = 20,
-  fromDate?: string,
-  toDate?: string
+  accountId: string,
+  pageNumber: number = 1,
+  pageSize: number = 20
 ): Promise<TransactionHistoryResponse> => {
-  const params = new URLSearchParams({
-    page: page.toString(),
-    pageSize: pageSize.toString(),
+  const response = await axiosClient.get(`/api/accounts/${accountId}/transactions`, {
+    params: { pageNumber, pageSize }
   });
-  
-  if (fromDate) params.append('fromDate', fromDate);
-  if (toDate) params.append('toDate', toDate);
-  
-  const response = await axiosClient.get(`/api/accounts/${accountId}/transactions?${params}`);
   return response.data;
 };
 

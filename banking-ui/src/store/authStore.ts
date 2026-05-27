@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 interface User {
-  id: number;
+  id: string;
   name: string;
   email: string;
   role: string;
@@ -16,10 +16,22 @@ interface AuthState {
   initialize: () => void;
 }
 
+const getInitialState = () => {
+  const token = localStorage.getItem('token');
+  const userStr = localStorage.getItem('user');
+  if (token && userStr) {
+    try {
+      return { token, user: JSON.parse(userStr), isAuthenticated: true };
+    } catch {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
+  }
+  return { token: null, user: null, isAuthenticated: false };
+};
+
 export const useAuthStore = create<AuthState>((set) => ({
-  token: null,
-  user: null,
-  isAuthenticated: false,
+  ...getInitialState(),
 
   login: (token: string, user: User) => {
     localStorage.setItem('token', token);
@@ -54,7 +66,6 @@ export const useAuthStore = create<AuthState>((set) => ({
           isAuthenticated: true,
         });
       } catch (error) {
-        // Invalid user data, clear storage
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         set({

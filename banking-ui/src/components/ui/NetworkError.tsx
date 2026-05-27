@@ -1,4 +1,5 @@
 import React from 'react';
+import { config } from '../../config';
 
 interface NetworkErrorProps {
   onRetry?: () => void;
@@ -17,7 +18,7 @@ export const NetworkError: React.FC<NetworkErrorProps> = ({ onRetry }) => {
         <h3 className="text-lg font-medium text-gray-900 mb-2">Cannot connect to server</h3>
         
         <p className="text-sm text-gray-600 mb-4">
-          Make sure the banking API is running on localhost:7001
+          Unable to connect to the API server at {config.apiUrl}
         </p>
         
         {onRetry && (

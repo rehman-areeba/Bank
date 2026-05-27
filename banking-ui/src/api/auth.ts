@@ -6,8 +6,7 @@ export interface LoginRequest {
 }
 
 export interface RegisterRequest {
-  firstName: string;
-  lastName: string;
+  fullName: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -15,21 +14,17 @@ export interface RegisterRequest {
 
 export interface AuthResponse {
   token: string;
-  user: {
-    id: number;
-    name: string;
-    email: string;
-    role: string;
-  };
+  expiresAt: string;
+  userId: string;
+  fullName: string;
+  role: string;
 }
 
 export interface UserProfile {
-  id: number;
-  firstName: string;
-  lastName: string;
+  userId: string;
   email: string;
   role: string;
-  createdAt: string;
+  fullName: string;
 }
 
 // Login API
