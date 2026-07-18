@@ -4,11 +4,21 @@ namespace BankingApi.Services;
 
 public class BackgroundTransactionProcessor(
     ILogger<BackgroundTransactionProcessor> logger,
-    IServiceScopeFactory serviceScopeFactory) : BackgroundService
+    IServiceScopeFactory serviceScopeFactory) : BackgroundService, INotificationQueue
 {
     private readonly ILogger<BackgroundTransactionProcessor> _logger = logger;
     private readonly IServiceScopeFactory _serviceScopeFactory = serviceScopeFactory;
-    private readonly Channel<TransactionNotification> _channel = Channel.CreateUnbounded<TransactionNotification>();
+    // Bounded capacity of 10 000 prevents unbounded memory growth under load.
+    // BoundedChannelFullMode.Wait back-pressures the producer (TransferService)
+    // rather than silently dropping notifications.
+    private readonly Channel<TransactionNotification> _channel =
+        Channel.CreateBounded<TransactionNotification>(
+            new BoundedChannelOptions(10_000)
+            {
+                FullMode            = BoundedChannelFullMode.Wait,
+                SingleReader        = true,   // only ExecuteAsync reads
+                SingleWriter        = false   // multiple request threads may enqueue
+            });
 
     public ChannelWriter<TransactionNotification> Writer => _channel.Writer;
 
@@ -65,10 +75,19 @@ public class BackgroundTransactionProcessor(
             notification.TransactionId);
     }
 
-    public async Task EnqueueNotificationAsync(TransactionNotification notification)
+    // INotificationQueue implementation.
+    // TryWrite is non-blocking: if the channel is at capacity (10 000 items) the
+    // notification is dropped with a warning rather than blocking the request thread
+    // that just committed a transfer. A blocked request thread under load would
+    // exhaust the thread pool and degrade API throughput for all users.
+    public void Enqueue(TransactionNotification notification)
     {
-        await _channel.Writer.WriteAsync(notification);
-        _logger.LogDebug("Notification enqueued for transaction {TransactionId}", notification.TransactionId);
+        if (!_channel.Writer.TryWrite(notification))
+            _logger.LogWarning(
+                "Notification channel full — dropping notification for transaction {TransactionId}",
+                notification.TransactionId);
+        else
+            _logger.LogDebug("Notification enqueued for transaction {TransactionId}", notification.TransactionId);
     }
 }
 

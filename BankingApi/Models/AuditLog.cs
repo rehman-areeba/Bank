@@ -27,6 +27,12 @@ public class AuditLog
     [MaxLength(45)]
     public string? IpAddress { get; init; }
 
+    [MaxLength(100)]
+    public string? Reason { get; init; }
+
+    [MaxLength(50)]
+    public string? CorrelationId { get; init; }
+
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 
     [ForeignKey(nameof(UserId))]

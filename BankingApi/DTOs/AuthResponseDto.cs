@@ -5,5 +5,6 @@ public record AuthResponseDto(
     DateTime ExpiresAt,
     Guid UserId,
     string FullName,
+    string Email,
     string Role
 );

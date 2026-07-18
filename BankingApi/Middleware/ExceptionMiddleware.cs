@@ -1,49 +1,98 @@
-using Microsoft.AspNetCore.Mvc;
+using FluentValidation;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using System.Net;
 
 namespace BankingApi.Middleware;
 
-public class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
+public class ExceptionMiddleware(
+    RequestDelegate next,
+    ILogger<ExceptionMiddleware> logger,
+    IHostEnvironment env)
 {
-    private readonly RequestDelegate _next = next;
-    private readonly ILogger<ExceptionMiddleware> _logger = logger;
-
     public async Task InvokeAsync(HttpContext context)
     {
         try
         {
-            await _next(context);
+            await next(context);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An unhandled exception occurred: {Message}", ex.Message);
-            await HandleExceptionAsync(context, ex);
+            logger.LogError(ex,
+                "Unhandled {ExceptionType} on {Method} {Path}: {Message}",
+                ex.GetType().Name,
+                context.Request.Method,
+                context.Request.Path,
+                ex.Message);
+
+            await WriteResponseAsync(context, ex);
         }
     }
 
-    private static Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private Task WriteResponseAsync(HttpContext context, Exception exception)
     {
-        var (statusCode, title) = exception switch
-        {
-            NotFoundException => (HttpStatusCode.NotFound, "Resource Not Found"),
-            UnauthorizedAccessException => (HttpStatusCode.Unauthorized, "Unauthorized"),
-            InvalidOperationException => (HttpStatusCode.BadRequest, "Bad Request"),
-            _ => (HttpStatusCode.InternalServerError, "Internal Server Error")
-        };
+        var (status, message, errors) = Classify(exception);
 
-        var problemDetails = new ProblemDetails
-        {
-            Status = (int)statusCode,
-            Title = title,
-            Detail = exception.Message,
-            Instance = context.Request.Path
-        };
+        var body = new ApiErrorResponse(
+            message,
+            errors,
+            env.IsProduction() ? null : exception.ToString());
 
-        context.Response.ContentType = "application/problem+json";
-        context.Response.StatusCode = (int)statusCode;
+        context.Response.ContentType = "application/json";
+        context.Response.StatusCode  = (int)status;
 
-        return context.Response.WriteAsJsonAsync(problemDetails);
+        if (context.Items["CorrelationId"] is string cid)
+            context.Response.Headers["X-Correlation-ID"] = cid;
+
+        return context.Response.WriteAsJsonAsync(body);
     }
+
+    private static (HttpStatusCode status, string message, string[] errors) Classify(Exception ex) =>
+        ex switch
+        {
+            ValidationException ve => (
+                HttpStatusCode.UnprocessableEntity,
+                "Validation failed",
+                ve.Errors.Select(e => $"{e.PropertyName}: {e.ErrorMessage}").ToArray()),
+
+            NotFoundException nfe => (
+                HttpStatusCode.NotFound,
+                nfe.Message,
+                []),
+
+            UnauthorizedAccessException ue => (
+                HttpStatusCode.Unauthorized,
+                ue.Message,
+                []),
+
+            InvalidOperationException ioe => (
+                HttpStatusCode.BadRequest,
+                ioe.Message,
+                []),
+
+            DbUpdateException due => (
+                HttpStatusCode.Conflict,
+                "A database conflict occurred. The operation could not be completed.",
+                [due.InnerException?.Message ?? due.Message]),
+
+            SqlException => (
+                HttpStatusCode.ServiceUnavailable,
+                "A database error occurred. Please try again later.",
+                []),
+
+            _ => (
+                HttpStatusCode.InternalServerError,
+                "An unexpected error occurred.",
+                [])
+        };
+}
+
+public record ApiErrorResponse(
+    string Message,
+    string[] Errors,
+    string? Detail = null)
+{
+    public bool Success => false;
 }
 
 public class NotFoundException : Exception

@@ -18,9 +18,6 @@ public class EmailNotificationService(ILogger<EmailNotificationService> logger) 
             "Email notification sent to {Email}: {Direction} transfer of {Amount:C}, Transaction ID: {TransactionId}",
             email, direction, amount, transactionId);
 
-        // Simulate async email sending
-        await Task.Delay(50, cancellationToken);
-
         // TODO: Replace with actual SMTP implementation
         // Example with MailKit:
         // var message = new MimeMessage();
