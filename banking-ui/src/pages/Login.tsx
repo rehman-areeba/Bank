@@ -26,8 +26,8 @@ const Login: React.FC = () => {
     onSuccess: (data) => {
       const user = {
         id: data.userId,
-        name: data.fullName,
-        email: '', // Will be fetched from /me endpoint if needed
+        name: data.fullName || data.email || 'User',
+        email: data.email || '',
         role: data.role
       };
       login(data.token, user);

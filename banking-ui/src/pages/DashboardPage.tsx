@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
 import { getAccountsApi, getRecentTransactionsApi } from '../api/accounts';
+import { formatPKR } from '../utils/formatters';
 import BalanceCard from '../components/ui/BalanceCard';
 import { CreateAccountModal } from '../components/banking/CreateAccountModal';
 import { DashboardSkeleton } from '../components/skeletons';
@@ -47,15 +48,6 @@ const DashboardPage: React.FC = () => {
   const handleRetry = () => {
     refetchAccounts();
     refetchTransactions();
-  };
-
-  const formatBalance = (amount: number): string => {
-    return new Intl.NumberFormat('en-PK', {
-      style: 'currency',
-      currency: 'PKR',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
   };
 
   const getTotalBalance = (): number => {
@@ -204,11 +196,11 @@ const DashboardPage: React.FC = () => {
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-                <p className="text-sm text-gray-600 hide-mobile">Welcome back, {user?.name}</p>
+                <p className="text-sm text-gray-600 hide-mobile">Welcome back, {user?.name || user?.email}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <span className="text-sm text-gray-700 hide-mobile" aria-label={`Logged in as ${user?.name}`}>{user?.name}</span>
+              <span className="text-sm text-gray-700 hide-mobile" aria-label={`Logged in as ${user?.name || user?.email}`}>{user?.name || user?.email}</span>
               <button
                 onClick={handleLogout}
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
@@ -228,7 +220,7 @@ const DashboardPage: React.FC = () => {
           {/* Total Balance Summary */}
           <section aria-labelledby="total-balance-heading" className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
             <h2 id="total-balance-heading" className="text-lg font-medium mb-2">Total Balance</h2>
-            <p className="text-3xl font-bold" aria-label={`Total balance: ${formatBalance(getTotalBalance())}`}>{formatBalance(getTotalBalance())}</p>
+            <p className="text-3xl font-bold" aria-label={`Total balance: ${formatPKR(getTotalBalance())}`}>{formatPKR(getTotalBalance())}</p>
             <p className="text-blue-100 text-sm mt-2">
               Across {accounts?.filter((acc) => acc.isActive).length || 0} active accounts
             </p>
@@ -252,13 +244,8 @@ const DashboardPage: React.FC = () => {
                 {accounts.map((account) => (
                   <BalanceCard
                     key={account.id}
-                    accountNumber={account.accountNumber}
-                    type={account.type}
-                    balance={account.balance}
-                    isActive={account.isActive}
-                    onClick={() => {
-                      navigate(`/account/${account.id}`);
-                    }}
+                    account={account}
+                    onClick={() => navigate(`/account/${account.id}`)}
                   />
                 ))}
               </div>
@@ -282,7 +269,7 @@ const DashboardPage: React.FC = () => {
           {/* Quick Actions */}
           <section aria-labelledby="quick-actions-heading">
             <h2 id="quick-actions-heading" className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-            <nav aria-label="Quick actions" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <nav aria-label="Quick actions" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Link 
                 to="/transfer"
                 className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow text-left block"
@@ -336,6 +323,24 @@ const DashboardPage: React.FC = () => {
                   </div>
                 </div>
               </button>
+
+              <Link
+                to="/scheduled-payments"
+                className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow text-left block"
+                aria-label="Manage scheduled payments"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                    <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900">Scheduled Payments</h3>
+                    <p className="text-sm text-gray-500">Manage recurring transfers</p>
+                  </div>
+                </div>
+              </Link>
             </nav>
           </section>
 
@@ -344,7 +349,7 @@ const DashboardPage: React.FC = () => {
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex justify-between items-center">
                 <h2 id="recent-transactions-heading" className="text-xl font-semibold text-gray-900">Recent Transactions</h2>
-                <button className="text-blue-600 hover:text-blue-700 text-sm font-medium" aria-label="View all transactions">
+                <button className="text-blue-600 hover:text-blue-700 text-sm font-medium" onClick={() => navigate('/transactions')} aria-label="View all transactions">
                   View All
                 </button>
               </div>
@@ -395,8 +400,8 @@ const DashboardPage: React.FC = () => {
                       <div className="text-right">
                         <p className={`font-semibold ${
                           transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
-                        }`} aria-label={`${transaction.amount > 0 ? 'Credit' : 'Debit'} of ${formatBalance(Math.abs(transaction.amount))}`}>
-                          {transaction.amount > 0 ? '+' : ''}{formatBalance(Math.abs(transaction.amount))}
+                        }`} aria-label={`${transaction.amount > 0 ? 'Credit' : 'Debit'} of ${formatPKR(Math.abs(transaction.amount))}`}>
+                          {transaction.amount > 0 ? '+' : ''}{formatPKR(Math.abs(transaction.amount))}
                         </p>
                         <div aria-label={`Status: ${transaction.status}`}>
                           {getStatusBadge(transaction.status)}

@@ -45,7 +45,7 @@ const TransferPage: React.FC = () => {
             </div>
             <div className="flex items-center space-x-3">
               <span className="text-sm text-gray-700 hide-mobile">
-                {user?.name}
+                {user?.name || user?.email}
               </span>
               <button
                 onClick={handleLogout}

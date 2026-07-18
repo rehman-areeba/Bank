@@ -3,7 +3,7 @@ import axiosClient from './axiosClient';
 export interface Account {
   id: string;
   accountNumber: string;
-  type: string;
+  accountType: string;
   balance: number;
   isActive: boolean;
   createdAt: string;
@@ -29,10 +29,11 @@ export interface Transaction {
 }
 
 export interface TransactionHistoryResponse {
-  transactions: Transaction[];
+  data: Transaction[];
   totalCount: number;
-  page: number;
+  pageNumber: number;
   pageSize: number;
+  totalPages: number;
 }
 
 // Get all accounts for the authenticated user
@@ -54,8 +55,8 @@ export const getAccountBalanceApi = async (accountId: string): Promise<{ balance
 };
 
 // Create new account
-export const createAccountApi = async (accountData: { type: string }): Promise<Account> => {
-  const response = await axiosClient.post('/api/accounts', { type: accountData.type });
+export const createAccountApi = async (accountData: CreateAccountRequest): Promise<Account> => {
+  const response = await axiosClient.post('/api/accounts', { accountType: accountData.accountType });
   return response.data;
 };
 

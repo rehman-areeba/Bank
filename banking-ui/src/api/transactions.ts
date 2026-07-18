@@ -1,42 +1,14 @@
-import axiosClient from './axiosClient';
+import { getTransactionHistoryApi } from './accounts';
+
+export type { TransactionHistoryResponse } from './accounts';
 
 export interface TransactionFilters {
-  page: number;
-  pageSize: number;
-  accountId?: string;
+  accountId: string;
   type?: string;
   startDate?: string;
   endDate?: string;
 }
 
-export interface Transaction {
-  id: number;
-  type: string;
-  amount: number;
-  description: string;
-  status: string;
-  createdAt: string;
-  accountId: number;
-}
-
-export interface TransactionsResponse {
-  transactions: Transaction[];
-  totalCount: number;
-  hasMore: boolean;
-  currentPage: number;
-}
-
-export const getTransactionsApi = async (filters: TransactionFilters): Promise<TransactionsResponse> => {
-  const params = new URLSearchParams();
-  
-  params.append('page', filters.page.toString());
-  params.append('pageSize', filters.pageSize.toString());
-  
-  if (filters.accountId) params.append('accountId', filters.accountId);
-  if (filters.type) params.append('type', filters.type);
-  if (filters.startDate) params.append('startDate', filters.startDate);
-  if (filters.endDate) params.append('endDate', filters.endDate);
-
-  const response = await axiosClient.get(`/api/transactions?${params.toString()}`);
-  return response.data;
-};
+// Re-export the real endpoint — the old /api/transactions does not exist.
+// TransactionsPage now calls GET /api/accounts/{id}/transactions via this wrapper.
+export { getTransactionHistoryApi as getTransactionsApi };

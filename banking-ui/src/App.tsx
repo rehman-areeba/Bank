@@ -8,6 +8,8 @@ import Register from './pages/Register';
 import DashboardPage from './pages/DashboardPage';
 import TransferPage from './pages/TransferPage';
 import TransactionsPage from './pages/TransactionsPage';
+import AccountDetailPage from './pages/AccountDetailPage';
+import ScheduledPaymentsPage from './pages/ScheduledPaymentsPage';
 import { AdminPage } from './pages/AdminPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import ErrorBoundary from './components/ui/ErrorBoundary';
@@ -60,6 +62,11 @@ function AppContent() {
                 <DashboardPage />
               </ErrorBoundary>
             } />
+            <Route path="/account/:id" element={
+              <ErrorBoundary fallback={<PageErrorFallback />}>
+                <AccountDetailPage />
+              </ErrorBoundary>
+            } />
             <Route path="/transfer" element={
               <ErrorBoundary fallback={<PageErrorFallback />}>
                 <TransferPage />
@@ -68,6 +75,11 @@ function AppContent() {
             <Route path="/transactions" element={
               <ErrorBoundary fallback={<PageErrorFallback />}>
                 <TransactionsPage />
+              </ErrorBoundary>
+            } />
+            <Route path="/scheduled-payments" element={
+              <ErrorBoundary fallback={<PageErrorFallback />}>
+                <ScheduledPaymentsPage />
               </ErrorBoundary>
             } />
           </Route>

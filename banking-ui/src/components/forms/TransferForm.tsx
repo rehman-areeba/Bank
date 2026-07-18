@@ -1,12 +1,15 @@
 import React from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getAccountsApi } from '../../api/accounts';
 import { transferFundsApi } from '../../api/transfers';
+import { formatAccountOption, formatPKR } from '../../utils/formatters';
+import { invalidateAccountQueries, invalidateTransactionQueries } from '../../lib/queryInvalidation';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { Toast } from '../common/Toast';
+import { TransferStatusModal } from '../banking/TransferStatusModal';
 import { transferSchema } from '../../validation/schemas';
 
 type TransferFormData = {
@@ -18,8 +21,10 @@ type TransferFormData = {
 
 export const TransferForm: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [showConfirm, setShowConfirm] = React.useState(false);
   const [toast, setToast] = React.useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [completedTransactionId, setCompletedTransactionId] = React.useState<string | null>(null);
 
   const { data: accounts, isLoading } = useQuery({
     queryKey: ['accounts'],
@@ -65,9 +70,11 @@ export const TransferForm: React.FC = () => {
 
   const transferMutation = useMutation({
     mutationFn: transferFundsApi,
-    onSuccess: () => {
+    onSuccess: (data) => {
+      invalidateAccountQueries(queryClient);
+      invalidateTransactionQueries(queryClient);
+      setCompletedTransactionId(data.transactionId);
       setToast({ type: 'success', message: 'Transfer completed successfully!' });
-      setTimeout(() => navigate('/dashboard'), 2000);
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || 'Transfer failed. Please try again.';
@@ -81,23 +88,13 @@ export const TransferForm: React.FC = () => {
 
   const handleConfirmTransfer = () => {
     const formData = watch();
-    const transferData = {
+    transferMutation.mutate({
       fromAccountId: formData.fromAccountId,
-      toAccountId: formData.toAccountNumber,
+      toAccountNumber: formData.toAccountNumber,
       amount: formData.amount,
       description: formData.description || 'Money transfer'
-    };
-    
-    transferMutation.mutate(transferData);
+    });
     setShowConfirm(false);
-  };
-
-  const formatBalance = (amount: number): string => {
-    return new Intl.NumberFormat('en-PK', {
-      style: 'currency',
-      currency: 'PKR',
-      minimumFractionDigits: 2
-    }).format(amount);
   };
 
   const isSubmitDisabled = !isValid || transferMutation.isPending;
@@ -158,7 +155,7 @@ export const TransferForm: React.FC = () => {
               <option value="">Select source account</option>
               {accounts?.filter((acc) => acc.isActive).map((account) => (
                 <option key={account.id} value={account.id}>
-                  {account.accountNumber} - {account.type} ({formatBalance(account.balance)})
+                  {formatAccountOption(account)}
                 </option>
               ))}
             </select>
@@ -168,7 +165,7 @@ export const TransferForm: React.FC = () => {
             {selectedAccount && (
               <p className="mt-2 text-sm text-gray-600">
                 Available balance: <span className="font-semibold text-green-600">
-                  {formatBalance(selectedAccount.balance)}
+                  {formatPKR(selectedAccount.balance)}
                 </span>
               </p>
             )}
@@ -182,7 +179,7 @@ export const TransferForm: React.FC = () => {
             <input
               type="text"
               {...register('toAccountNumber')}
-              placeholder="Enter 10-digit account number"
+              placeholder="Enter 9-10 digit account number"
               maxLength={10}
               className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                 errors.toAccountNumber ? 'border-red-300' : 'border-gray-300'
@@ -244,13 +241,22 @@ export const TransferForm: React.FC = () => {
         </form>
       </div>
 
+      {/* Transfer Status Modal */}
+      {completedTransactionId && (
+        <TransferStatusModal
+          isOpen={true}
+          onClose={() => { setCompletedTransactionId(null); navigate('/dashboard'); }}
+          transactionId={completedTransactionId}
+        />
+      )}
+
       {/* Confirmation Dialog */}
       <ConfirmDialog
         isOpen={showConfirm}
         onClose={() => setShowConfirm(false)}
         onConfirm={handleConfirmTransfer}
         title="Confirm Transfer"
-        message={`Are you sure you want to transfer ${formatBalance(amount || 0)} to account ${toAccountNumber}?`}
+        message={`Are you sure you want to transfer ${formatPKR(amount || 0)} to account ${toAccountNumber}?`}
         confirmText="Transfer"
         cancelText="Cancel"
       />

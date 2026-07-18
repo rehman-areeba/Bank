@@ -44,11 +44,12 @@ export const transferSchema = z.object({
   fromAccountId: z
     .string()
     .min(1, 'Please select a source account')
-    .regex(/^\d+$/, 'Invalid account ID'),
+    .uuid('Invalid account selection'),
   toAccountNumber: z
     .string()
-    .length(10, 'Account number must be exactly 10 digits')
-    .regex(/^\d{10}$/, 'Account number must contain only digits'),
+    .min(9, 'Account number must be 9-10 digits')
+    .max(10, 'Account number must be 9-10 digits')
+    .regex(/^\d{9,10}$/, 'Account number must contain only digits'),
   amount: z
     .number({ invalid_type_error: 'Amount must be a number' })
     .positive('Amount must be greater than 0')
@@ -75,6 +76,39 @@ export const createAccountSchema = z.object({
 });
 
 export type CreateAccountFormData = z.infer<typeof createAccountSchema>;
+
+// Scheduled Payment Schema
+// Backend rules: Amount > 0, FrequencyDays >= 1, ToAccountNumber 9-10 digits (same as transfer)
+export const scheduledPaymentSchema = z.object({
+  fromAccountId: z
+    .string()
+    .min(1, 'Please select a source account')
+    .uuid('Invalid account selection'),
+  toAccountNumber: z
+    .string()
+    .min(9, 'Account number must be 9-10 digits')
+    .max(10, 'Account number must be 9-10 digits')
+    .regex(/^\d{9,10}$/, 'Account number must contain only digits'),
+  amount: z
+    .number({ invalid_type_error: 'Amount must be a number' })
+    .positive('Amount must be greater than 0')
+    .min(1, 'Minimum amount is 1'),
+  frequencyDays: z
+    .number({ invalid_type_error: 'Frequency must be a number' })
+    .int('Frequency must be a whole number')
+    .min(1, 'Frequency must be at least 1 day')
+    .max(365, 'Frequency cannot exceed 365 days'),
+  firstRunDate: z
+    .string()
+    .min(1, 'First run date is required')
+    .refine((val) => !isNaN(Date.parse(val)), 'Invalid date')
+    .refine(
+      (val) => new Date(val) >= new Date(new Date().toDateString()),
+      'First run date cannot be in the past'
+    ),
+});
+
+export type ScheduledPaymentFormData = z.infer<typeof scheduledPaymentSchema>;
 
 // Password strength helper
 export const getPasswordStrength = (password: string): { strength: 'weak' | 'medium' | 'strong'; color: string; label: string } => {

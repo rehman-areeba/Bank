@@ -1,50 +1,88 @@
 import axiosClient from './axiosClient';
 
 export interface AuditLog {
-  id: number;
-  userId: number;
+  id: string;
+  userId: string;
+  userEmail: string | null;
+  transactionId: string | null;
   action: string;
-  details: string;
-  timestamp: string;
-  ipAddress: string;
+  amount: number | null;
+  status: string | null;
+  ipAddress: string | null;
+  reason: string | null;
+  correlationId: string | null;
+  createdAt: string;
 }
 
-export interface FailedLogin {
-  id: number;
+export interface AuditLogsResponse {
+  data: AuditLog[];
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+
+export interface FailedLoginEntry {
+  userId: string;
   email: string;
-  ipAddress: string;
-  attemptTime: string;
-  reason: string;
+  fullName: string;
+  failedAttempts: number;
+  lastAttempt: string;
+  ipAddresses: string[];
+  riskLevel: 'MEDIUM' | 'HIGH' | 'CRITICAL';
 }
 
-export interface AccountFreezeRequest {
-  accountId: number;
-  freeze: boolean;
+export interface FailedLoginsResponse {
+  timeWindow: string;
+  suspiciousUsers: FailedLoginEntry[];
+  count: number;
+}
+
+export interface FreezeAccountRequest {
+  unfreeze: boolean;
   reason?: string;
 }
 
-// Get audit logs (Admin only)
-export const getAuditLogsApi = async (): Promise<AuditLog[]> => {
-  const response = await axiosClient.get('/api/admin/audit-logs');
+export interface FreezeAccountResponse {
+  accountId: string;
+  status: string;
+  message: string;
+  reason: string | null;
+}
+
+export interface AuditLogsParams {
+  pageNumber?: number;
+  pageSize?: number;
+  action?: string;
+  status?: string;
+  userEmail?: string;
+  from?: string;
+  to?: string;
+  sortBy?: string;
+  descending?: boolean;
+}
+
+export const getAuditLogsApi = async (params: AuditLogsParams = {}): Promise<AuditLogsResponse> => {
+  const response = await axiosClient.get('/api/v1/admin/audit-logs', { params });
   return response.data;
 };
 
-// Get audit logs for specific user (Admin only)
-export const getUserAuditLogsApi = async (userId: number): Promise<AuditLog[]> => {
-  const response = await axiosClient.get(`/api/admin/audit-logs/${userId}`);
-  return response.data;
-};
-
-// Get failed login attempts (Admin only)
-export const getFailedLoginsApi = async (): Promise<FailedLogin[]> => {
-  const response = await axiosClient.get('/api/admin/failed-logins');
-  return response.data;
-};
-
-// Freeze or unfreeze account (Admin only)
-export const freezeAccountApi = async (freezeData: AccountFreezeRequest): Promise<void> => {
-  await axiosClient.put(`/api/admin/accounts/${freezeData.accountId}/freeze`, {
-    freeze: freezeData.freeze,
-    reason: freezeData.reason,
+export const getUserAuditLogsApi = async (userId: string, pageNumber = 1, pageSize = 50): Promise<AuditLogsResponse> => {
+  const response = await axiosClient.get(`/api/v1/admin/audit-logs/${userId}`, {
+    params: { pageNumber, pageSize },
   });
+  return response.data;
+};
+
+export const getFailedLoginsApi = async (hours = 24): Promise<FailedLoginsResponse> => {
+  const response = await axiosClient.get('/api/v1/admin/failed-logins', { params: { hours } });
+  return response.data;
+};
+
+export const freezeAccountApi = async (
+  accountId: string,
+  body: FreezeAccountRequest
+): Promise<FreezeAccountResponse> => {
+  const response = await axiosClient.put(`/api/v1/admin/accounts/${accountId}/freeze`, body);
+  return response.data;
 };

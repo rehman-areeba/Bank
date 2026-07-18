@@ -17,14 +17,15 @@ export interface AuthResponse {
   expiresAt: string;
   userId: string;
   fullName: string;
+  email: string;
   role: string;
 }
 
 export interface UserProfile {
   userId: string;
-  email: string;
-  role: string;
-  fullName: string;
+  email: string | null;
+  role: string | null;
+  fullName: string | null;
 }
 
 // Login API

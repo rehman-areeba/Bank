@@ -1,29 +1,14 @@
 import React from 'react';
+import { Account } from '../../api/accounts';
+import { formatPKR, maskAccountNumber } from '../../utils/formatters';
 
 interface BalanceCardProps {
-  accountNumber: string;
-  type?: string;
-  balance: number;
-  isActive: boolean;
+  account: Account;
   onClick?: () => void;
 }
 
-const BalanceCard: React.FC<BalanceCardProps> = ({
-  accountNumber,
-  type,
-  balance,
-  isActive,
-  onClick,
-}) => {
-  const formatBalance = (amount: number): string => {
-    return new Intl.NumberFormat('en-PK', {
-      style: 'currency',
-      currency: 'PKR',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  };
-
+const BalanceCard: React.FC<BalanceCardProps> = ({ account, onClick }) => {
+  const { accountNumber, accountType, balance, isActive } = account;
   const getAccountTypeColor = (accountType?: string): string => {
     const normalizedType = accountType?.toLowerCase() || '';
     switch (normalizedType) {
@@ -83,20 +68,20 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
           <div className={`p-2 rounded-full ${
             isActive ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'
           }`}>
-            {getAccountIcon(type)}
+            {getAccountIcon(accountType)}
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">{type || 'Unknown'} Account</h3>
-            <p className="text-sm text-gray-500">****{accountNumber?.slice(-4) || '0000'}</p>
+            <h3 className="text-lg font-semibold text-gray-900">{accountType || 'Unknown'} Account</h3>
+            <p className="text-sm text-gray-500">{maskAccountNumber(accountNumber || '0000')}</p>
           </div>
         </div>
         
         {/* Status Badges */}
         <div className="flex flex-col items-end space-y-2">
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            getAccountTypeColor(type)
+            getAccountTypeColor(accountType)
           }`}>
-            {type || 'Unknown'}
+            {accountType || 'Unknown'}
           </span>
           {!isActive && (
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
@@ -112,7 +97,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
         <p className={`text-2xl font-bold ${
           isActive ? 'text-gray-900' : 'text-gray-500'
         }`}>
-          {formatBalance(balance)}
+          {formatPKR(balance)}
         </p>
       </div>
 

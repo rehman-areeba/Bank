@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createAccountApi } from '../../api/accounts';
+import { invalidateAccountQueries } from '../../lib/queryInvalidation';
 import { Toast } from '../common/Toast';
 import { createAccountSchema, CreateAccountFormData } from '../../validation/schemas';
 
@@ -63,7 +64,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({ isOpen, 
     mutationFn: createAccountApi,
     onSuccess: () => {
       setToast({ type: 'success', message: 'Account created successfully!' });
-      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      invalidateAccountQueries(queryClient);
       setTimeout(() => {
         onClose();
         resetForm();
@@ -88,7 +89,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({ isOpen, 
   };
 
   const onSubmit = (data: CreateAccountFormData) => {
-    createAccountMutation.mutate({ type: data.type });
+    createAccountMutation.mutate({ accountType: data.type });
   };
 
   const handleTypeSelect = (type: AccountType) => {
