@@ -38,10 +38,15 @@ Log.Logger = new LoggerConfiguration()
 try
 {
 
-builder.Host.UseSerilog((ctx, services, config) =>
-    config.ReadFrom.Configuration(ctx.Configuration)
-          .ReadFrom.Services(services)
-          .Enrich.FromLogContext());
+// Skip Serilog in Test environment to avoid "logger already frozen" when
+// WebApplicationFactory creates multiple app instances in the same process.
+if (!builder.Environment.IsEnvironment("Test"))
+{
+    builder.Host.UseSerilog((ctx, services, config) =>
+        config.ReadFrom.Configuration(ctx.Configuration)
+              .ReadFrom.Services(services)
+              .Enrich.FromLogContext());
+}
 
 // ── Configure Kestrel for dynamic PORT binding (Render, Azure, etc.) ──────────
 var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
@@ -102,7 +107,12 @@ builder.Services.AddCors(options =>
         }
         else
         {
-            // Allow all origins if none configured (for initial cloud deployment)
+            // Allow all origins if none configured (for initial cloud deployment).
+            // Set Cors__AllowedOrigins__0 in the Render dashboard to lock this down.
+            if (builder.Environment.IsProduction())
+                Log.Warning("CORS: Cors:AllowedOrigins is not configured — falling back to AllowAnyOrigin. " +
+                            "Set Cors__AllowedOrigins__0 in the Render dashboard to restrict access.");
+
             policy.AllowAnyOrigin()
                   .AllowAnyHeader()
                   .AllowAnyMethod();
@@ -118,31 +128,21 @@ builder.Services.AddCors(options =>
 });
 
 // ── Authentication (JWT) ──────────────────────────────────────────────────────
-var jwtKey = builder.Configuration["Jwt:Key"];
-
-if (string.IsNullOrWhiteSpace(jwtKey))
-    throw new InvalidOperationException(
-        "Jwt:Key is not configured. Set the Jwt__Key environment variable.");
-
-if (builder.Environment.IsProduction() &&
-    (jwtKey.Contains("dev-only") || jwtKey.Contains("dev-secret") || jwtKey.Length < 32))
-    throw new InvalidOperationException(
-        "Jwt:Key is a development placeholder or too short. Set a strong Jwt__Key environment variable in production.");
-
+// Register JWT bearer with placeholder parameters. The real key, issuer, and
+// audience are applied by JwtBearerPostConfigureOptions below, which runs after
+// the DI container is fully built — meaning WebApplicationFactory's
+// ConfigureAppConfiguration overrides are already in IConfiguration by the time
+// the options are first resolved. This is the correct ASP.NET Core pattern for
+// options that depend on configuration that may be overridden by the host.
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer           = true,
-            ValidateAudience         = true,
-            ValidateLifetime         = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer              = builder.Configuration["Jwt:Issuer"],
-            ValidAudience            = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-        };
-    });
+    .AddJwtBearer();
+
+// IPostConfigureOptions<T> is resolved lazily when the options are first
+// requested (i.e. on the first authenticated HTTP request), not at startup.
+// By that time WebApplicationFactory has already applied its
+// ConfigureAppConfiguration additions, so IConfiguration contains the test key.
+builder.Services.AddSingleton<IPostConfigureOptions<JwtBearerOptions>,
+    JwtBearerOptionsConfigurator>();
 
 builder.Services.AddAuthorization();
 
@@ -378,27 +378,27 @@ app.UseRateLimiter();
 app.UseOutputCache();
 
 // ── Serilog Request Logging ───────────────────────────────────────────────────
-// Replaces the verbose Microsoft request logs with a single structured line
-// per request that includes method, path, status code, elapsed ms, and
-// CorrelationId (already in LogContext from CorrelationIdMiddleware).
-app.UseSerilogRequestLogging(opts =>
+if (!app.Environment.IsEnvironment("Test"))
 {
-    opts.MessageTemplate =
-        "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
-    opts.GetLevel = (ctx, elapsed, ex) =>
-        ex is not null || ctx.Response.StatusCode >= 500
-            ? LogEventLevel.Error
-            : ctx.Response.StatusCode >= 400
-                ? LogEventLevel.Warning
-                : LogEventLevel.Information;
-    opts.EnrichDiagnosticContext = (diag, ctx) =>
+    app.UseSerilogRequestLogging(opts =>
     {
-        diag.Set("RequestHost", ctx.Request.Host.Value);
-        diag.Set("UserAgent",   ctx.Request.Headers.UserAgent.ToString());
-        if (ctx.Items["CorrelationId"] is string cid)
-            diag.Set("CorrelationId", cid);
-    };
-});
+        opts.MessageTemplate =
+            "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+        opts.GetLevel = (ctx, elapsed, ex) =>
+            ex is not null || ctx.Response.StatusCode >= 500
+                ? LogEventLevel.Error
+                : ctx.Response.StatusCode >= 400
+                    ? LogEventLevel.Warning
+                    : LogEventLevel.Information;
+        opts.EnrichDiagnosticContext = (diag, ctx) =>
+        {
+            diag.Set("RequestHost", ctx.Request.Host.Value);
+            diag.Set("UserAgent",   ctx.Request.Headers.UserAgent.ToString());
+            if (ctx.Items["CorrelationId"] is string cid)
+                diag.Set("CorrelationId", cid);
+        };
+    });
+}
 
 // Map controllers
 app.MapControllers();

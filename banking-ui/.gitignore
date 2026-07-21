@@ -26,3 +26,9 @@ dist-ssr
 # Environment variables
 .env.local
 .env.*.local
+
+# TypeScript build info
+tsconfig.tsbuildinfo
+
+# Captured output
+vite-output.txt

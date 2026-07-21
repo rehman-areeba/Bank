@@ -8,9 +8,27 @@
 .env.local
 .env.production
 
-# Environment-specific appsettings
+# Environment-specific appsettings (contain secrets / machine-specific config)
 appsettings.Development.json
 appsettings.Production.json
+
+# Build artifacts
+banking-ui/tsconfig.tsbuildinfo
+
+# Captured terminal output
+*.txt
+api_err.txt
+api_output.txt
+api_startup.txt
+run_output.txt
+startup_test.log
+banking-ui/vite-output.txt
+
+# Local dev scripts (machine-specific)
+*.bat
+
+# Local test SQL scripts
+ADD_BALANCE.sql
 
 # User-specific files
 *.rsuser

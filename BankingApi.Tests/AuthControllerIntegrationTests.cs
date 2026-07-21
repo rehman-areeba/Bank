@@ -33,7 +33,7 @@ public class AuthControllerIntegrationTests : IClassFixture<BankingApiFactory>
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -60,10 +60,10 @@ public class AuthControllerIntegrationTests : IClassFixture<BankingApiFactory>
         };
 
         // Register first time
-        await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
+        await _client.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         // Act - Try to register again with same email
-        var response = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -80,16 +80,12 @@ public class AuthControllerIntegrationTests : IClassFixture<BankingApiFactory>
             Password = "Test@1234",
             ConfirmPassword = "Test@1234"
         };
-        await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
+        await _client.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
-        var loginRequest = new LoginRequestDto
-        {
-            Email = "login.test@example.com",
-            Password = "Test@1234"
-        };
+        var loginRequest = new LoginRequestDto("login.test@example.com", "Test@1234");
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/login", loginRequest);
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -112,16 +108,12 @@ public class AuthControllerIntegrationTests : IClassFixture<BankingApiFactory>
             Password = "Test@1234",
             ConfirmPassword = "Test@1234"
         };
-        await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
+        await _client.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
-        var loginRequest = new LoginRequestDto
-        {
-            Email = "invalid.password@example.com",
-            Password = "WrongPassword@123"
-        };
+        var loginRequest = new LoginRequestDto("invalid.password@example.com", "WrongPassword@123");
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/login", loginRequest);
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -131,14 +123,10 @@ public class AuthControllerIntegrationTests : IClassFixture<BankingApiFactory>
     public async Task AuthController_Login_NonExistentUser_Returns401()
     {
         // Arrange
-        var loginRequest = new LoginRequestDto
-        {
-            Email = "nonexistent@example.com",
-            Password = "Test@1234"
-        };
+        var loginRequest = new LoginRequestDto("nonexistent@example.com", "Test@1234");
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/login", loginRequest);
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -155,14 +143,14 @@ public class AuthControllerIntegrationTests : IClassFixture<BankingApiFactory>
             Password = "Test@1234",
             ConfirmPassword = "Test@1234"
         };
-        var registerResponse = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
+        var registerResponse = await _client.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
         var authResult = await registerResponse.Content.ReadFromJsonAsync<AuthResponseDto>();
 
         // Add token to request
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult!.Token);
 
         // Act
-        var response = await _client.GetAsync("/api/auth/me");
+        var response = await _client.GetAsync("/api/v1/auth/me");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -178,7 +166,7 @@ public class AuthControllerIntegrationTests : IClassFixture<BankingApiFactory>
         // Arrange - No token
 
         // Act
-        var response = await _client.GetAsync("/api/auth/me");
+        var response = await _client.GetAsync("/api/v1/auth/me");
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);

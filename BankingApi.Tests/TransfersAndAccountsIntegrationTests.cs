@@ -31,7 +31,7 @@ public class TransfersAndAccountsIntegrationTests : IClassFixture<BankingApiFact
             Password = "Test@1234",
             ConfirmPassword = "Test@1234"
         };
-        var registerResponse = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
+        var registerResponse = await _client.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
         var authResult = await registerResponse.Content.ReadFromJsonAsync<AuthResponseDto>();
 
         // Get the account number from database
@@ -63,7 +63,7 @@ public class TransfersAndAccountsIntegrationTests : IClassFixture<BankingApiFact
         };
 
         // Act - No authorization header
-        var response = await _client.PostAsJsonAsync("/api/transfers", transferRequest);
+        var response = await _client.PostAsJsonAsync("/api/v1/transfers", transferRequest);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -96,14 +96,14 @@ public class TransfersAndAccountsIntegrationTests : IClassFixture<BankingApiFact
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", senderToken);
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/transfers", transferRequest);
+        var response = await _client.PostAsJsonAsync("/api/v1/transfers", transferRequest);
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
         var result = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(500, result.GetProperty("amount").GetDecimal());
-        Assert.Equal("Completed", result.GetProperty("status").GetString());
+        Assert.Equal("SUCCESS", result.GetProperty("status").GetString());
 
         // Verify balance was debited
         using var verifyScope = _factory.Services.CreateScope();
@@ -136,7 +136,7 @@ public class TransfersAndAccountsIntegrationTests : IClassFixture<BankingApiFact
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", senderToken);
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/transfers", transferRequest);
+        var response = await _client.PostAsJsonAsync("/api/v1/transfers", transferRequest);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -164,7 +164,7 @@ public class TransfersAndAccountsIntegrationTests : IClassFixture<BankingApiFact
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", senderToken);
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/transfers", transferRequest);
+        var response = await _client.PostAsJsonAsync("/api/v1/transfers", transferRequest);
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -184,7 +184,7 @@ public class TransfersAndAccountsIntegrationTests : IClassFixture<BankingApiFact
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.GetAsync($"/api/accounts/{account.Id}");
+        var response = await _client.GetAsync($"/api/v1/accounts/{account.Id}");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -210,10 +210,12 @@ public class TransfersAndAccountsIntegrationTests : IClassFixture<BankingApiFact
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", user1Token);
 
         // Act
-        var response = await _client.GetAsync($"/api/accounts/{user2Account.Id}");
+        var response = await _client.GetAsync($"/api/v1/accounts/{user2Account.Id}");
 
-        // Assert
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        // Assert - returns 404 (not 403) to prevent account-existence leakage:
+        // a user querying another user's account ID gets the same response as
+        // querying a non-existent account, so they cannot enumerate account IDs.
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
@@ -226,7 +228,7 @@ public class TransfersAndAccountsIntegrationTests : IClassFixture<BankingApiFact
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.GetAsync("/api/accounts");
+        var response = await _client.GetAsync("/api/v1/accounts");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -258,7 +260,7 @@ public class TransfersAndAccountsIntegrationTests : IClassFixture<BankingApiFact
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/accounts", createAccountRequest);
+        var response = await _client.PostAsJsonAsync("/api/v1/accounts", createAccountRequest);
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);

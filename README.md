@@ -2,10 +2,10 @@
 
 > A full-stack banking application exploring production-grade backend patterns through ACID transactions, concurrency control, and comprehensive audit logging.
 
-![.NET](https://img.shields.io/badge/ASP.NET_Core-8.0-512BD4?style=flat&logo=dotnet)
+![.NET](https://img.shields.io/badge/ASP.NET_Core-10.0-512BD4?style=flat&logo=dotnet)
 ![React](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat&logo=typescript)
-![SQL Server](https://img.shields.io/badge/SQL_Server-EF_Core_8-CC2927?style=flat&logo=microsoftsqlserver)
+![SQL Server](https://img.shields.io/badge/SQL_Server-EF_Core_9-CC2927?style=flat&logo=microsoftsqlserver)
 ![JWT](https://img.shields.io/badge/JWT-Auth-000000?style=flat&logo=jsonwebtokens)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat)
 
@@ -65,10 +65,10 @@ If you're reading this code, you'll find implementations of ACID-compliant trans
 └──────────────┬──────────────────────┘
                │ HTTPS + JWT
 ┌──────────────▼──────────────────────┐
-│      ASP.NET Core 8 Web API         │
+│      ASP.NET Core 10 Web API        │
 │   Controllers → Services → Repos    │
 └──────────────┬──────────────────────┘
-               │ EF Core 8
+               │ EF Core 9
 ┌──────────────▼──────────────────────┐
 │         SQL Server Database         │
 │  Users, Accounts, Transactions,     │
@@ -123,8 +123,8 @@ If any step fails (insufficient balance, concurrency conflict, database error), 
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| **Backend** | ASP.NET Core 8.0 | RESTful API framework with built-in DI, middleware pipeline |
-| | Entity Framework Core 8 | ORM for database operations, migrations, change tracking |
+| **Backend** | ASP.NET Core 10.0 | RESTful API framework with built-in DI, middleware pipeline |
+| | Entity Framework Core 9 | ORM for database operations, migrations, change tracking |
 | | SQL Server | Relational database with ACID guarantees, RowVersion support |
 | | JWT Bearer | Stateless authentication with signed tokens |
 | | FluentValidation | Declarative request validation with custom rules |
@@ -149,7 +149,7 @@ If any step fails (insufficient balance, concurrency conflict, database error), 
 
 ### Prerequisites
 
-- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - [Node.js 18+](https://nodejs.org/) and npm
 - [SQL Server](https://www.microsoft.com/en-us/sql-server/sql-server-downloads) (Express or Developer Edition)
 - [Git](https://git-scm.com/)
@@ -280,43 +280,43 @@ VITE_API_URL=http://localhost:5245
 
 | Method | Endpoint | Auth Required | Description |
 |--------|----------|---------------|-------------|
-| POST | `/api/auth/register` | No | Register new user with email and password |
-| POST | `/api/auth/login` | No | Login and receive JWT token |
-| GET | `/api/auth/me` | Yes | Get current authenticated user info |
+| POST | `/api/v1/auth/register` | No | Register new user with email and password |
+| POST | `/api/v1/auth/login` | No | Login and receive JWT token |
+| GET | `/api/v1/auth/me` | Yes | Get current authenticated user info |
 
 ### Accounts
 
 | Method | Endpoint | Auth Required | Description |
 |--------|----------|---------------|-------------|
-| GET | `/api/accounts` | Yes | Get all accounts for authenticated user |
-| GET | `/api/accounts/{id}` | Yes | Get specific account details |
-| GET | `/api/accounts/{id}/balance` | Yes | Get current account balance |
-| POST | `/api/accounts` | Yes | Create new account (Savings/Checking/Business) |
-| POST | `/api/accounts/{id}/deposit` | Yes | Deposit money into account |
-| POST | `/api/accounts/{id}/withdraw` | Yes | Withdraw money from account |
+| GET | `/api/v1/accounts` | Yes | Get all accounts for authenticated user |
+| GET | `/api/v1/accounts/{id}` | Yes | Get specific account details |
+| GET | `/api/v1/accounts/{id}/balance` | Yes | Get current account balance |
+| POST | `/api/v1/accounts` | Yes | Create new account (Savings/Checking) |
+| POST | `/api/v1/accounts/{id}/deposit` | Yes | Deposit money into account |
+| POST | `/api/v1/accounts/{id}/withdraw` | Yes | Withdraw money from account |
 
 ### Transfers
 
 | Method | Endpoint | Auth Required | Description |
 |--------|----------|---------------|-------------|
-| POST | `/api/transfers` | Yes | Transfer money between accounts |
-| GET | `/api/transfers/history` | Yes | Get transfer history for user's accounts |
+| POST | `/api/v1/transfers` | Yes | Transfer money between accounts |
+| GET | `/api/v1/transfers/{id}` | Yes | Get transfer status by transaction ID |
 
 ### Transactions
 
 | Method | Endpoint | Auth Required | Description |
 |--------|----------|---------------|-------------|
-| GET | `/api/accounts/{id}/transactions` | Yes | Get transaction history with pagination and filters |
-| GET | `/api/transactions/recent` | Yes | Get recent transactions across all user accounts |
+| GET | `/api/v1/accounts/{id}/transactions` | Yes | Get transaction history with pagination and filters |
+| GET | `/api/v1/transactions/recent` | Yes | Get recent transactions across all user accounts |
 
 ### Admin
 
 | Method | Endpoint | Auth Required | Role Required | Description |
 |--------|----------|---------------|---------------|-------------|
-| GET | `/api/admin/audit-logs` | Yes | Admin | Get audit logs with filtering |
-| GET | `/api/admin/audit-logs/{userId}` | Yes | Admin | Get audit logs for specific user |
-| GET | `/api/admin/failed-logins` | Yes | Admin | Get failed login attempts (last 24 hours) |
-| PUT | `/api/admin/accounts/{id}/freeze` | Yes | Admin | Freeze or unfreeze user account |
+| GET | `/api/v1/admin/audit-logs` | Yes | Admin | Get audit logs with filtering |
+| GET | `/api/v1/admin/audit-logs/{userId}` | Yes | Admin | Get audit logs for specific user |
+| GET | `/api/v1/admin/failed-logins` | Yes | Admin | Get failed login attempts (last 24 hours) |
+| PUT | `/api/v1/admin/accounts/{id}/freeze` | Yes | Admin | Freeze or unfreeze user account |
 
 ---
 

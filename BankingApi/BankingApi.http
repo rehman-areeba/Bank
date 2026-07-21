@@ -1,6 +1,81 @@
-@BankingApi_HostAddress = http://localhost:5245
+@BankingApi_HostAddress = http://localhost:5000
+@token = <paste-jwt-token-here>
 
-GET {{BankingApi_HostAddress}}/weatherforecast/
-Accept: application/json
+### Register
+POST {{BankingApi_HostAddress}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Test User",
+  "email": "test@example.com",
+  "password": "Password1!",
+  "confirmPassword": "Password1!"
+}
+
+###
+
+### Login
+POST {{BankingApi_HostAddress}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Password1!"
+}
+
+###
+
+### Get current user
+GET {{BankingApi_HostAddress}}/api/v1/auth/me
+Authorization: Bearer {{token}}
+
+###
+
+### List accounts
+GET {{BankingApi_HostAddress}}/api/v1/accounts
+Authorization: Bearer {{token}}
+
+###
+
+### Deposit
+POST {{BankingApi_HostAddress}}/api/v1/accounts/<account-id>/deposit
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "amount": 1000,
+  "description": "Initial deposit"
+}
+
+###
+
+### Withdraw
+POST {{BankingApi_HostAddress}}/api/v1/accounts/<account-id>/withdraw
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "amount": 500,
+  "description": "Cash withdrawal"
+}
+
+###
+
+### Transfer
+POST {{BankingApi_HostAddress}}/api/v1/transfers
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "fromAccountId": "<source-account-id>",
+  "toAccountNumber": "<destination-account-number>",
+  "amount": 200,
+  "description": "Transfer"
+}
+
+###
+
+### Health check
+GET {{BankingApi_HostAddress}}/health
 
 ###

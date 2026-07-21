@@ -17,7 +17,7 @@ on:
 
 # Define environment variables used across all jobs
 env:
-  DOTNET_VERSION: '8.0.x'
+  DOTNET_VERSION: '10.0.x'
   BUILD_CONFIGURATION: 'Release'
   API_PROJECT_PATH: './BankingApi/BankingApi.csproj'
   TEST_PROJECT_PATH: './BankingApi.Tests/BankingApi.Tests.csproj'
@@ -35,8 +35,8 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all history for better analysis
       
-      # Step 2: Setup .NET 8 SDK
-      - name: Setup .NET 8
+      # Step 2: Setup .NET 10 SDK
+      - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
@@ -113,8 +113,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      # Step 2: Setup .NET 8
-      - name: Setup .NET 8
+      # Step 2: Setup .NET 10
+      - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
@@ -157,8 +157,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      # Step 2: Setup .NET 8
-      - name: Setup .NET 8
+      # Step 2: Setup .NET 10
+      - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}

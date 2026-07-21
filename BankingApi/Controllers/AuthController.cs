@@ -45,7 +45,7 @@ public class AuthController(IAuthService authService, IValidator<RegisterRequest
         }
 
         var response = await _authService.RegisterAsync(request, cancellationToken);
-        return CreatedAtAction(nameof(GetMe), new { id = response.UserId }, response);
+        return CreatedAtAction(nameof(GetMe), response);
     }
 
     /// <summary>Log in and receive a JWT token.</summary>

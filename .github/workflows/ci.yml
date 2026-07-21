@@ -1,0 +1,180 @@
+name: CI
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Triggers
+#
+# Runs on every push to any branch and on every pull request targeting main.
+# Path filters ensure the workflow only fires when backend code actually
+# changes — frontend-only commits skip it entirely, saving runner minutes.
+# ─────────────────────────────────────────────────────────────────────────────
+on:
+  push:
+    paths:
+      - "BankingApi/**"
+      - "BankingApi.Tests/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "BankingApi/**"
+      - "BankingApi.Tests/**"
+      - ".github/workflows/ci.yml"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Concurrency
+#
+# If a new push arrives while a previous run for the same branch/PR is still
+# in progress, cancel the old run. This prevents a queue of stale runs from
+# consuming runner minutes and keeps feedback fast.
+# ─────────────────────────────────────────────────────────────────────────────
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true          # Suppress the .NET welcome banner in logs
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true  # Skip one-time setup on cold runners
+
+jobs:
+  build-test-publish:
+    name: Build · Test · Publish
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      # Checks out the repository at the commit that triggered the workflow.
+      # fetch-depth: 0 fetches the full history so tools like dotnet-format
+      # and SonarCloud can compare against the base branch if needed later.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ── 2. Install .NET SDK ──────────────────────────────────────────────────
+      # Both the API and test projects target net10.0.
+      # The SDK also includes the runtime, so no separate runtime install is needed.
+      - name: Setup .NET SDK (10)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.x
+
+      # ── 3. Cache NuGet packages ──────────────────────────────────────────────
+      # Caches the global NuGet package cache (~/.nuget/packages) keyed on the
+      # lock files. On a cache hit the restore step completes in seconds instead
+      # of downloading hundreds of MB from nuget.org. The cache is invalidated
+      # automatically whenever any .csproj changes.
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # ── 4. Restore ───────────────────────────────────────────────────────────
+      # Restores NuGet packages for every project in the solution.
+      # Running restore once at the solution level is faster than per-project
+      # because shared transitive dependencies are resolved only once.
+      - name: Restore
+        run: dotnet restore BankingSystem.slnx
+
+      # ── 5. Build ─────────────────────────────────────────────────────────────
+      # Compiles both projects in Release configuration.
+      # --no-restore skips a redundant restore since step 4 already did it.
+      # Warnings are treated as errors (-warnaserror) so code quality issues
+      # that would be silent locally are caught in CI.
+      - name: Build
+        run: >
+          dotnet build BankingSystem.slnx
+          --configuration Release
+          --no-restore
+          -warnaserror
+
+      # ── 6. Test ──────────────────────────────────────────────────────────────
+      # Runs the full xUnit test suite (unit + integration tests).
+      #
+      # --no-build:   skips recompilation — the build step already produced the
+      #               binaries, so this saves time.
+      #
+      # --logger trx: writes a Visual Studio Test Results (.trx) file that
+      #               GitHub can parse and display as a test summary.
+      #
+      # --collect "XPlat Code Coverage": uses coverlet (already referenced in
+      #               the test project) to emit a Cobertura XML coverage report.
+      #               "XPlat" means it works on Linux/macOS/Windows runners.
+      #
+      # --results-directory: all output goes to a single known folder so the
+      #               upload steps below can find it reliably.
+      - name: Test
+        run: >
+          dotnet test BankingApi.Tests/BankingApi.Tests.csproj
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=test-results.trx"
+          --collect:"XPlat Code Coverage"
+          --results-directory ./TestResults
+
+      # ── 7. Upload test results ───────────────────────────────────────────────
+      # Uploads the .trx file as a workflow artifact.
+      # if: always() ensures this runs even when the test step fails, so you
+      # can download the results and see which tests failed without re-running.
+      # retention-days: 14 keeps artifacts for two weeks then auto-deletes them.
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/**/*.trx
+          retention-days: 14
+
+      # ── 8. Upload coverage report ────────────────────────────────────────────
+      # Uploads the Cobertura XML coverage report produced by coverlet.
+      # This artifact can be consumed by a coverage reporting tool (e.g.
+      # Codecov, ReportGenerator) in a future step or separate workflow.
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: TestResults/**/coverage.cobertura.xml
+          retention-days: 14
+
+      # ── 9. Publish ───────────────────────────────────────────────────────────
+      # Produces a self-contained, deployment-ready folder under ./publish.
+      # --no-build reuses the binaries from step 5.
+      # This artifact is what a deployment job would pick up — keeping build
+      # and deploy as separate jobs means deploy can be added later without
+      # touching this workflow.
+      - name: Publish
+        run: >
+          dotnet publish BankingApi/BankingApi.csproj
+          --configuration Release
+          --no-build
+          --output ./publish
+
+      # ── 10. Upload publish artifact ──────────────────────────────────────────
+      # Stores the published output so it can be downloaded locally or consumed
+      # by a future deployment job via needs: + download-artifact.
+      # retention-days: 7 keeps it for one week — long enough for a manual
+      # deploy review but short enough to avoid storage costs.
+      - name: Upload publish artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: banking-api-${{ github.sha }}
+          path: ./publish
+          retention-days: 7
+
+      # ── 11. Job summary ──────────────────────────────────────────────────────
+      # Writes a markdown summary to the GitHub Actions job summary page.
+      # This appears directly in the workflow run UI without opening any logs.
+      - name: Write job summary
+        if: always()
+        run: |
+          echo "## CI Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| | |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Triggered by | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Artifact | \`banking-api-${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,72 @@
+services:
+
+  # ── SQL Server ───────────────────────────────────────────────────────────────
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: banking_sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD}"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"${SA_PASSWORD}\" -Q \"SELECT 1\" -C -b -o /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  # ── EF Core migrations ───────────────────────────────────────────────────────
+  # Runs the self-contained efbundle, applies all pending migrations, then exits.
+  # The API waits for service_completed_successfully before starting.
+  db-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    container_name: banking_migrate
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=BankingDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    restart: "no"
+
+  # ── API ───────────────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: banking_api
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      PORT: "5000"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=BankingDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "BankingApi"
+      Jwt__Audience: "BankingClient"
+    ports:
+      - "5000:5000"
+    volumes:
+      - api_logs:/app/logs
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  sqlserver_data:
+  api_logs:

@@ -1,25 +1,85 @@
-# Render.com deployment configuration
-# Place this file in the root of your repository
+# ============================================================================
+# Render.com Deployment Configuration for BankingApi (Docker)
+# ============================================================================
+# Place this file in the ROOT of your repository
+# Render will automatically detect and use this configuration
+# ============================================================================
 
 services:
+  # ──────────────────────────────────────────────────────────────────────────
+  # Backend API Service (Docker)
+  # ──────────────────────────────────────────────────────────────────────────
   - type: web
     name: banking-api
-    env: dotnet
-    region: oregon
-    plan: free
-    buildCommand: dotnet publish BankingApi/BankingApi.csproj -c Release -o out
-    startCommand: dotnet out/BankingApi.dll
+    runtime: docker  # CRITICAL: Use 'docker' not 'dotnet'
+    region: oregon   # Choose: oregon, frankfurt, singapore, ohio
+    plan: free       # Options: free, starter ($7/mo), standard ($25/mo)
+    
+    # ────────────────────────────────────────────────────────────────────
+    # Docker Configuration
+    # ────────────────────────────────────────────────────────────────────
+    # Render will automatically:
+    # 1. Find Dockerfile in repository root
+    # 2. Build the Docker image
+    # 3. Run the container
+    # 4. Set PORT environment variable dynamically
+    dockerfilePath: ./Dockerfile  # Path to Dockerfile (relative to repo root)
+    dockerContext: ./             # Build context (repo root)
+    
+    # ────────────────────────────────────────────────────────────────────
+    # Health Check
+    # ────────────────────────────────────────────────────────────────────
+    # Render will ping this endpoint to check if your app is healthy
+    healthCheckPath: /health
+    
+    # ────────────────────────────────────────────────────────────────────
+    # Auto Deploy
+    # ────────────────────────────────────────────────────────────────────
+    # Automatically deploy when you push to main branch
+    branch: main
+    autoDeploy: true
+    
+    # ────────────────────────────────────────────────────────────────────
+    # Environment Variables
+    # ────────────────────────────────────────────────────────────────────
+    # IMPORTANT: Set these in Render Dashboard after creating the service
+    # Dashboard → Service → Environment → Add Environment Variable
     envVars:
+      # ──────────────────────────────────────────────────────────────
+      # ASP.NET Core Environment
+      # ──────────────────────────────────────────────────────────────
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
-      - key: ASPNETCORE_URLS
-        value: http://0.0.0.0:$PORT
+      
+      # ──────────────────────────────────────────────────────────────
+      # Database Connection String
+      # ──────────────────────────────────────────────────────────────
+      # sync: false = This is a SECRET, set it manually in Render Dashboard
+      # DO NOT commit actual connection string to Git!
       - key: ConnectionStrings__DefaultConnection
-        sync: false
+        sync: false  # Set this in Render Dashboard
+      
+      # ──────────────────────────────────────────────────────────────
+      # JWT Secret Key
+      # ──────────────────────────────────────────────────────────────
+      # generateValue: true = Render will auto-generate a secure random key
       - key: Jwt__Key
-        generateValue: true
+        generateValue: true  # Render auto-generates secure key
         sync: false
+      
+      - key: Jwt__Issuer
+        value: BankingApi
+      
+      - key: Jwt__Audience
+        value: BankingClient
+      
+      - key: Jwt__ExpiryHours
+        value: 24
+      
+      # ──────────────────────────────────────────────────────────────
+      # CORS Configuration
+      # ──────────────────────────────────────────────────────────────
+      # Leave empty initially - update after deploying frontend
+      # Example: https://your-frontend.vercel.app
       - key: Cors__AllowedOrigins__0
-        sync: false
-    healthCheckPath: /health
-    autoDeploy: true
+        sync: false  # Set this after frontend deployment

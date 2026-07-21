@@ -30,18 +30,18 @@ export interface UserProfile {
 
 // Login API
 export const loginApi = async (credentials: LoginRequest): Promise<AuthResponse> => {
-  const response = await axiosClient.post('/api/auth/login', credentials);
+  const response = await axiosClient.post('/api/v1/auth/login', credentials);
   return response.data;
 };
 
 // Register API
 export const registerApi = async (userData: RegisterRequest): Promise<AuthResponse> => {
-  const response = await axiosClient.post('/api/auth/register', userData);
+  const response = await axiosClient.post('/api/v1/auth/register', userData);
   return response.data;
 };
 
 // Get current user profile
 export const getMeApi = async (): Promise<UserProfile> => {
-  const response = await axiosClient.get('/api/auth/me');
+  const response = await axiosClient.get('/api/v1/auth/me');
   return response.data;
 };

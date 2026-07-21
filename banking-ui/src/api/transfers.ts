@@ -25,11 +25,11 @@ export interface TransferStatus {
 }
 
 export const transferFundsApi = async (transferData: TransferRequest): Promise<TransferResponse> => {
-  const response = await axiosClient.post('/api/transfers', transferData);
+  const response = await axiosClient.post('/api/v1/transfers', transferData);
   return response.data;
 };
 
 export const getTransferStatusApi = async (id: string): Promise<TransferStatus> => {
-  const response = await axiosClient.get(`/api/transfers/${id}`);
+  const response = await axiosClient.get(`/api/v1/transfers/${id}`);
   return response.data;
 };
