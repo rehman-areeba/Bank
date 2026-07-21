@@ -50,7 +50,7 @@ If you're reading this code, you'll find implementations of ACID-compliant trans
 
 - [x] **Global Exception Middleware** — Centralized error handling catches unhandled exceptions, logs them, and returns consistent error responses without exposing stack traces to clients
 
-- [x] **Rate Limiting** — Fixed window rate limiting on auth endpoints (10 requests/minute) and transfer endpoints (5 requests/minute per user) to prevent abuse
+- [x] **Rate Limiting** — Global fixed window rate limiting: 500 requests/minute for authenticated users (keyed by user ID), 100 requests/minute for anonymous users (keyed by IP)
 
 - [x] **Background Service** — Hosted service processes queued notifications asynchronously after transactions commit, keeping API response times fast
 
@@ -93,7 +93,7 @@ Security is implemented at multiple layers:
 - **Password Hashing**: BCrypt with configurable work factor (default 12 rounds) ensures passwords are never stored in plaintext
 - **JWT Tokens**: Signed tokens with 24-hour expiry, validated on every request, containing user ID and role claims
 - **Role-Based Authorization**: Separate Customer and Admin roles enforced via ASP.NET Core's policy-based authorization
-- **Rate Limiting**: Fixed window rate limiting prevents brute force attacks (10 auth requests/minute, 5 transfers/minute per user)
+- **Rate Limiting**: Global fixed window rate limiting — 500 req/min per authenticated user (keyed by user ID), 100 req/min per anonymous IP
 - **Row-Level Locking**: Serializable isolation on transfers prevents concurrent modifications to the same account
 - **Input Validation**: FluentValidation rules validate all incoming requests before they reach business logic
 - **HTTPS Enforcement**: All production traffic redirected to HTTPS, preventing man-in-the-middle attacks
@@ -135,7 +135,8 @@ If any step fails (insufficient balance, concurrency conflict, database error), 
 | | TanStack Query (React Query) | Server state management, caching, automatic refetching |
 | | Zustand | Lightweight client state management (auth, theme) |
 | | Tailwind CSS | Utility-first CSS framework |
-| | Recharts | Composable charting library for transaction visualizations |
+| | React Hook Form + Zod | Form state management and schema validation |
+| | Serilog | Structured logging with console and rolling file sinks |
 | **Testing** | xUnit | Test framework for unit and integration tests |
 | | WebApplicationFactory | In-memory API testing with real HTTP requests |
 | | InMemory Database | EF Core in-memory provider for isolated test data |
@@ -318,6 +319,14 @@ VITE_API_URL=http://localhost:5245
 | GET | `/api/v1/admin/failed-logins` | Yes | Admin | Get failed login attempts (last 24 hours) |
 | PUT | `/api/v1/admin/accounts/{id}/freeze` | Yes | Admin | Freeze or unfreeze user account |
 
+### Scheduled Payments
+
+| Method | Endpoint | Auth Required | Description |
+|--------|----------|---------------|-------------|
+| POST | `/api/v1/scheduled-payments` | Yes | Create a recurring scheduled payment |
+| GET | `/api/v1/scheduled-payments` | Yes | List all scheduled payments for authenticated user |
+| DELETE | `/api/v1/scheduled-payments/{id}` | Yes | Cancel a scheduled payment |
+
 ---
 
 ## 🧪 Testing
@@ -367,35 +376,39 @@ dotnet test /p:CollectCoverage=true
 
 ```
 BankingApi/
-├── Controllers/           # API endpoints (Auth, Accounts, Transfers, Admin)
+├── Controllers/           # API endpoints (Auth, Accounts, Transfers, Admin, ScheduledPayments)
 ├── Services/              # Business logic layer
 │   ├── AuthService.cs
 │   ├── AccountService.cs
 │   ├── TransferService.cs
 │   ├── AuditService.cs
-│   └── NotificationService.cs
+│   ├── ScheduledPaymentService.cs
+│   ├── BackgroundTransactionProcessor.cs
+│   └── ScheduledPaymentProcessor.cs
 ├── Repositories/          # Data access layer
-│   ├── IRepository.cs
+│   ├── IAccountRepository.cs
+│   ├── ITransactionRepository.cs
+│   ├── IAuditRepository.cs
+│   ├── IUnitOfWork.cs
 │   ├── AccountRepository.cs
 │   ├── TransactionRepository.cs
-│   └── AuditLogRepository.cs
+│   └── AuditRepository.cs
 ├── Models/                # Domain entities
 │   ├── User.cs
 │   ├── Account.cs
 │   ├── Transaction.cs
-│   └── AuditLog.cs
-├── DTOs/                  # Data transfer objects
-│   ├── Requests/
-│   └── Responses/
+│   ├── AuditLog.cs
+│   └── ScheduledPayment.cs
+├── DTOs/                  # Data transfer objects (flat, no subdirectories)
 ├── Data/                  # DbContext and migrations
-│   ├── ApplicationDbContext.cs
+│   ├── BankingDbContext.cs
 │   └── Migrations/
+├── HealthChecks/          # Custom health checks
+├── Infrastructure/        # Swagger/JWT configuration
 ├── Middleware/            # Custom middleware
 │   ├── ExceptionMiddleware.cs
-│   └── RateLimitingMiddleware.cs
-├── Validators/            # FluentValidation rules
-├── BackgroundServices/    # Hosted services
-│   └── NotificationProcessor.cs
+│   ├── CorrelationIdMiddleware.cs
+│   └── SecurityHeadersMiddleware.cs
 └── Program.cs             # Application entry point
 ```
 
@@ -404,45 +417,50 @@ BankingApi/
 ```
 banking-ui/src/
 ├── components/
+│   ├── auth/              # Auth guards
+│   │   └── PrivateRoute.tsx
 │   ├── banking/           # Banking-specific components
-│   │   ├── AccountCard.tsx
-│   │   ├── TransferModal.tsx
-│   │   ├── TransactionsTable.tsx
-│   │   └── BalanceTrendChart.tsx
-│   ├── layout/            # Layout components
-│   │   ├── Navbar.tsx
-│   │   └── Sidebar.tsx
-│   └── ui/                # Reusable UI components
-│       ├── Button.tsx
-│       ├── Modal.tsx
-│       ├── Toast.tsx
-│       └── ThemeToggle.tsx
+│   │   ├── CreateAccountModal.tsx
+│   │   ├── DepositWithdrawModal.tsx
+│   │   └── TransferStatusModal.tsx
+│   ├── common/            # Shared components
+│   │   ├── ConfirmDialog.tsx
+│   │   └── Toast.tsx
+│   ├── forms/
+│   │   └── TransferForm.tsx
+│   ├── layout/
+│   │   └── MobileNav.tsx
+│   ├── skeletons/         # Loading skeleton components
+│   └── ui/                # Reusable UI primitives
 ├── pages/                 # Page components
-│   ├── LoginPage.tsx
-│   ├── RegisterPage.tsx
+│   ├── Login.tsx
+│   ├── Register.tsx
+│   ├── Dashboard.tsx
 │   ├── DashboardPage.tsx
-│   ├── TransfersPage.tsx
+│   ├── TransferPage.tsx
 │   ├── TransactionsPage.tsx
-│   └── AdminPage.tsx
+│   ├── AccountDetailPage.tsx
+│   ├── ScheduledPaymentsPage.tsx
+│   ├── AdminPage.tsx
+│   └── NotFoundPage.tsx
 ├── api/                   # API client functions
 │   ├── axiosClient.ts
 │   ├── auth.ts
 │   ├── accounts.ts
 │   ├── transfers.ts
+│   ├── transactions.ts
+│   ├── scheduledPayments.ts
 │   └── admin.ts
-├── store/                 # State management
-│   ├── authStore.ts       # Zustand auth store
-│   └── themeStore.ts
-├── hooks/                 # Custom React hooks
-│   ├── useAuth.ts
-│   └── useToast.ts
-├── types/                 # TypeScript interfaces
-│   ├── auth.types.ts
-│   ├── account.types.ts
-│   └── transaction.types.ts
+├── store/                 # Zustand state
+│   └── authStore.ts
+├── config/                # Runtime configuration
+├── lib/
+│   └── queryInvalidation.ts
+├── validation/            # Zod schemas
+│   └── schemas.ts
 ├── utils/                 # Utility functions
 │   ├── formatters.ts
-│   └── validators.ts
+│   └── accessibility.ts
 ├── App.tsx                # Root component
 ├── main.tsx               # Application entry point
 └── index.css              # Global styles with CSS variables
@@ -495,9 +513,6 @@ This project demonstrates core concepts but intentionally omits some features to
 - **Real Email/SMS Notifications** — Notifications are currently logged only; integration with SendGrid/Twilio would enable actual delivery
 - **Two-Factor Authentication (2FA)** — Add TOTP-based 2FA for enhanced security on sensitive operations
 - **Interbank Transfer Simulation** — Implement two-phase commit (2PC) to simulate transfers between different banks
-- **Scheduled/Recurring Payments** — Allow users to schedule future transfers or set up recurring payments
-- **Docker Containerization** — Dockerfiles for API and frontend, docker-compose for local development
-- **CI/CD Pipeline** — GitHub Actions workflow for automated testing and deployment
 - **Deployed Live Demo** — Host on Azure/AWS with real database for portfolio demonstration
 - **GraphQL API** — Alternative to REST for more flexible client queries
 - **Microservices Architecture** — Split into separate services (Auth, Accounts, Transfers) with message queue
