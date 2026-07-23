@@ -15,3 +15,7 @@ docker-compose*.yml
 **/.env
 README.md
 screenshots/
+
+# Never bake local dev secrets into the image.
+# Production config comes from Render environment variables only.
+**/appsettings.Development.json

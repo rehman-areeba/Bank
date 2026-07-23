@@ -28,7 +28,19 @@ RUN dotnet publish BankingApi/BankingApi.csproj \
     -o /app/publish \
     --no-build
 
-# ── Stage 5: runtime ──────────────────────────────────────────────────────────
+# ── Stage 5: migrations runner ────────────────────────────────────────────────
+# Separate image used only by the db-migrate compose service.
+# Must come BEFORE the runtime stage so that Render (which builds the last
+# stage by default) builds the runtime image, not this one.
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS migrator
+WORKDIR /app
+COPY --from=migrate /app/efbundle ./efbundle
+RUN chmod +x ./efbundle
+ENTRYPOINT ["./efbundle"]
+
+# ── Stage 6: runtime ──────────────────────────────────────────────────────────
+# THIS MUST BE THE LAST STAGE.
+# Render builds the final stage of the Dockerfile when no target is specified.
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
@@ -43,11 +55,3 @@ USER appuser
 EXPOSE 5000
 
 ENTRYPOINT ["dotnet", "BankingApi.dll"]
-
-# ── Stage 6: migrations runner ────────────────────────────────────────────────
-# Separate image used only by the db-migrate compose service.
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS migrator
-WORKDIR /app
-COPY --from=migrate /app/efbundle ./efbundle
-RUN chmod +x ./efbundle
-ENTRYPOINT ["./efbundle"]
