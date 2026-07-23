@@ -44,7 +44,7 @@ ENTRYPOINT ["./efbundle"]
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+RUN groupadd --system appgroup && useradd --system --no-create-home --gid appgroup appuser
 RUN mkdir -p /app/logs && chown -R appuser:appgroup /app
 
 COPY --from=publish --chown=appuser:appgroup /app/publish .
@@ -52,6 +52,12 @@ COPY --from=migrate --chown=appuser:appgroup /app/efbundle ./efbundle
 
 USER appuser
 
-EXPOSE 5000
+# Render injects PORT at runtime (typically 10000 on free tier).
+# Program.cs reads PORT via Environment.GetEnvironmentVariable("PORT")
+# and calls ListenAnyIP(port), so the app binds to whatever Render assigns.
+# EXPOSE is documentation only — Render's port scanner detects the open port
+# automatically. Do NOT set ASPNETCORE_URLS; ConfigureKestrel takes precedence
+# and ASPNETCORE_URLS would be silently ignored, causing confusion.
+EXPOSE 10000
 
 ENTRYPOINT ["dotnet", "BankingApi.dll"]
